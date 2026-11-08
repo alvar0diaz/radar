@@ -117,9 +117,10 @@ html, body {
 .panel {
   background: var(--fondo-panel); border: 1px solid var(--borde-panel); border-radius: 12px;
   padding: 0.45em 0.65em; width: 31vw; width: min(31vw, 14em);
+  font-size: 0.8em;  /* recuadros algo más pequeños que el resto del HUD (pantallas de 7") */
 }
 .panel .cab { display: flex; align-items: baseline; justify-content: space-between; gap: 0.4em; }
-.panel .grande { font-size: calc(var(--u) * 1.75); font-weight: 700; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.panel .grande { font-size: 1.75em; font-weight: 700; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .panel .rejilla { display: grid; grid-template-columns: 1fr 1fr; gap: 0.25em 0.6em; margin-top: 0.35em; }
 .panel small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.68em; color: var(--texto-suave); text-transform: uppercase; letter-spacing: 0.04em; line-height: 1.2; }
 .panel .rejilla > div { min-width: 0; }
@@ -142,7 +143,7 @@ html, body {
 
 /* En horizontal, los paneles ocupan el hueco lateral que deja el círculo */
 @media (orientation: landscape) {
-  .panel { width: clamp(200px, calc((100vw - 100vh) / 2 + 24px), 14em); }
+  .panel { width: clamp(165px, calc((100vw - 100vh) / 2 + 16px), 14em); }
 }
 /* En vertical (retrato) los paneles inferiores se reparten el ancho */
 @media (orientation: portrait) {

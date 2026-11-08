@@ -501,8 +501,8 @@
         ctx.strokeText(ta, lx, ly + U * 0.85);
         ctx.fillStyle = col; ctx.fillText(ta, lx, ly + U * 0.85);
       }
-      // avión de la tarjeta: tercera línea con la ruta (p. ej. LIS→AUH)
-      if (seleccion.hex === a.hex) {
+      // tercera línea con la ruta (p. ej. LIS→AUH) en todos los aviones que la tengan
+      {
         const ru = rutaVigente(a.indicativo);
         if (ru && ru.estado === 'ok') {
           const tr = ru.origen.cod + '→' + ru.destino.cod;
@@ -542,6 +542,9 @@
     const candidatos = [...aviones.values()]
       .filter((a) => !a.tierra && a.dist <= C.radioNM)
       .sort((a, b) => a.dist - b.dist);
+    // primero los vuelos de aerolínea (tienen origen y destino); las avionetas solo si no hay otros
+    const comerciales = candidatos.filter((a) => esVueloComercial(a.indicativo));
+    if (comerciales.length) candidatos.splice(0, candidatos.length, ...comerciales);
     if (!candidatos.length) return null;
     seleccion.indice = (seleccion.indice + 1) % candidatos.length;
     return candidatos[seleccion.indice].hex;

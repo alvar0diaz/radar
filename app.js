@@ -918,6 +918,62 @@
   });
   $('bRecargar').addEventListener('click', () => location.reload());
 
+  // --- Diagnóstico: comprueba una a una las conexiones que usa la app ---
+  // Sirve para saber, en la propia tablet, qué falla cuando aparece "Sin respuesta".
+  let swEstado = 'sin comprobar';
+  async function probar(url, opciones) {
+    const t0 = Date.now();
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    try {
+      const r = await fetch(url, Object.assign({ cache: 'no-store', signal: ctrl.signal }, opciones || {}));
+      // mode 'no-cors' devuelve una respuesta "opaca" (status 0): significa que la conexión funcionó
+      const ok = r.type === 'opaque' || r.ok || r.status === 404;
+      return { ok, txt: (ok ? 'OK' : 'HTTP ' + r.status) + ' · ' + (Date.now() - t0) + ' ms', r };
+    } catch (e) {
+      return { ok: false, txt: e.name === 'AbortError' ? 'sin respuesta en 8 s' : 'bloqueada (' + (e.message || e.name) + ')' };
+    } finally { clearTimeout(t); }
+  }
+  async function diagnosticar() {
+    const ul = $('aDiag');
+    ul.hidden = false;
+    ul.innerHTML = '<li><span>Probando…</span></li>';
+    const filas = [];
+    const fila = (nombre, ok, txt) => filas.push(`<li><span>${nombre}</span><span class="${ok ? 'ok' : 'mal'}">${ok ? '✓' : '✗'} ${txt}</span></li>`);
+    const m = navigator.userAgent.match(/(Firefox|Chrome)\/(\d+)/);
+    const navegador = m ? m[1] + ' ' + m[2] : navigator.userAgent.slice(0, 40);
+    const viejo = m && m[1] === 'Chrome' && +m[2] < 100;
+    fila('Navegador', !viejo, navegador + (viejo ? ' (antiguo)' : ''));
+    fila('Instalación (service worker)', swEstado === 'activo', swEstado);
+    // Hora de la tablet comparada con la del servidor (si está mal, los certificados fallan)
+    const app = await probar('manifest.webmanifest');
+    const fechaServidor = app.r && app.r.headers.get('date');
+    if (fechaServidor) {
+      const desfase = Math.round((Date.now() - new Date(fechaServidor).getTime()) / 60000);
+      fila('Fecha y hora de la tablet', Math.abs(desfase) < 10, Math.abs(desfase) < 10 ? 'correcta' : `desfasada ${desfase} min`);
+    }
+    const pruebas = [
+      ['Aviones (proxy Cloudflare)', urlFuente(C.fuentes[C.fuentes.length - 1]), {}],
+      ['Rutas (adsbdb)', 'https://api.adsbdb.com/v0/callsign/IBE0136', {}],
+      ['Tiempo (Open-Meteo)', 'https://api.open-meteo.com/v1/forecast?latitude=40.28&longitude=-3.79&current=temperature_2m', {}],
+      ['Lluvia (RainViewer)', 'https://api.rainviewer.com/public/weather-maps.json', {}],
+      ['Mapa (Esri)', 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/8/97/125', { mode: 'no-cors' }],
+    ];
+    let fallos = 0;
+    for (const [nombre, url, op] of pruebas) {
+      const r = await probar(url, op);
+      if (!r.ok) fallos++;
+      fila(nombre, r.ok, r.txt);
+    }
+    if (swEstado !== 'activo' && /SSL|certific/i.test(swEstado)) {
+      filas.push('<li class="nota">El navegador no acepta el certificado de seguridad. En Android 5-7 usa Firefox (ver README) o instala los certificados de Let\'s Encrypt.</li>');
+    } else if (fallos === pruebas.length) {
+      filas.push('<li class="nota">Fallan todas las conexiones externas: suele ser un problema de certificados del navegador (Android antiguo) o de la fecha de la tablet. Prueba con Firefox.</li>');
+    }
+    ul.innerHTML = filas.join('');
+  }
+  $('bDiag').addEventListener('click', diagnosticar);
+
   // Cambio de tamaño u orientación: reencuadrar (con un pequeño retraso para agrupar eventos)
   let tReencuadre = 0;
   function alCambiarTamano() {
@@ -945,8 +1001,11 @@
       location.reload();
     });
     navigator.serviceWorker.register('sw.js').then((reg) => {
+      swEstado = 'activo';
       setInterval(() => { if (navigator.onLine) reg.update().catch(() => {}); }, 30 * 60 * 1000);
-    }).catch((e) => console.warn('SW no registrado', e));
+    }).catch((e) => { swEstado = 'error: ' + (e.message || e.name); console.warn('SW no registrado', e); });
+  } else {
+    swEstado = 'no disponible (' + (location.protocol === 'https:' ? 'navegador sin soporte' : 'página sin https') + ')';
   }
 
   // --- Arranque ---

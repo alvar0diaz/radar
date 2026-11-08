@@ -198,4 +198,11 @@ html, body {
   background: #13241c; color: var(--texto); border: 1px solid var(--borde-panel);
 }
 #ajustes button.principal { background: #1d6b45; border-color: var(--verde); }
+/* Resultado de "Probar conexiones" */
+#ajustes .diag { list-style: none; margin: 0.7em 0 0; padding: 0.4em 0.6em; background: #07110c; border-radius: 8px; font-size: 0.75em; }
+#ajustes .diag li { display: flex; justify-content: space-between; gap: 0.8em; padding: 0.2em 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+#ajustes .diag li span:last-child { text-align: right; }
+#ajustes .diag .ok { color: var(--verde); }
+#ajustes .diag .mal { color: var(--rojo); }
+#ajustes .diag .nota { display: block; color: var(--ambar); border: 0; }
 #ajustes .info { font-size: 0.68em; color: var(--texto-suave); margin: 0.7em 0 0; line-height: 1.4; }

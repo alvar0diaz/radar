@@ -246,7 +246,7 @@ aparecerán los dos números arriba (el primero es la latitud).
 
 La tablet recoge los cambios sola en la siguiente recarga diaria. Para verlos al momento,
 cierra la app y ábrela dos veces. Si alguna vez no se actualiza, edita también `sw.js` y
-cambia el número de `const VERSION = 'v13';` (por ejemplo a `'v14'`).
+cambia el número de `const VERSION = 'v14';` (por ejemplo a `'v15'`).
 
 ---
 
@@ -255,6 +255,7 @@ cambia el número de `const VERSION = 'v13';` (por ejemplo a `'v14'`).
 | Qué ves | Qué hacer |
 |---|---|
 | "Falta proxy" arriba a la derecha | No has puesto la dirección del Worker en `config.js` (paso 4), o falta la coma o una comilla. |
+| Cualquier problema de datos | Toca ⚙ → **Probar conexiones**: indica qué servicio falla, la versión del navegador, si el certificado se acepta y si la hora de la tablet es correcta. |
 | "Sin respuesta" | Comprueba el puente con la prueba del paso 3.10. Si la prueba falla, entra en Cloudflare y vuelve a pegar `worker.js` y pulsar Deploy. |
 | "Sin datos · hace X min" | Ha fallado internet o la web de aviones. Se reconecta sola; si dura horas, revisa la wifi de la tablet. |
 | No aparece "Instalar aplicación" en Chrome | La dirección debe empezar por `https://`. Espera a que la página cargue del todo y vuelve a abrir el menú ⋮. |

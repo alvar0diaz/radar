@@ -36,7 +36,9 @@ window.CONFIG = {
   // Fuentes ADS-B en orden de preferencia. Si la primera falla se usa la
   // siguiente automáticamente. {lat} {lon} {r} se sustituyen solos.
   fuentes: [
-    { nombre: 'airplanes.live', ruta: '/airplanes/v2/point/{lat}/{lon}/{r}' },
+    // airplanes.live exige desde 2026 pedir permiso por correo (responde 403), así que
+    // está desactivada. Si te dan acceso, quita las dos barras de la línea siguiente.
+    // { nombre: 'airplanes.live', ruta: '/airplanes/v2/point/{lat}/{lon}/{r}' },
     { nombre: 'adsb.lol',       ruta: '/adsblol/v2/point/{lat}/{lon}/{r}' },
   ],
   refrescoAvionesSeg: 5,    // cada cuántos segundos se piden los aviones

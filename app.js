@@ -286,9 +286,13 @@
   // Todas las combinaciones proxy × fuente, en orden de preferencia
   const OPCIONES = [];
   PROXIES.forEach((p, ip) => C.fuentes.forEach((f) => OPCIONES.push({
-    f, base: p, nombre: f.nombre + (ip ? ' (respaldo)' : ''),
-    ms: ip ? 9000 : 4500,   // el respaldo de Google tarda más en contestar
+    f, base: p, ip, nombre: f.nombre + (ip ? ' (respaldo)' : ''),
+    ms: ip ? 20000 : 6000,  // el respaldo de Google tarda más (sobre todo la primera vez)
   })));
+  // Proxy que no contesta (bloqueado o caído): se salta durante 10 min para no perder tiempo
+  const proxyCaidoHasta = PROXIES.map(() => 0);
+  const textoError = (e) => !e ? '?' : e.name === 'AbortError' ? 'no contesta'
+    : /fetch|network|load/i.test(e.message) ? 'sin acceso' : e.message;
   function urlFuente(f, base) {
     const ruta = f.ruta.replace('{lat}', C.centro.lat).replace('{lon}', C.centro.lon).replace('{r}', radioConsulta());
     if (base === undefined) base = PROXIES[0];
@@ -314,18 +318,28 @@
     const n = OPCIONES.length;
     const inicio = Date.now() >= conexion.reintentarPrincipalEn ? 0 : conexion.fuenteIdx;
     let ultimoError;
+    const errores = [];
     for (let k = 0; k < n; k++) {
-      const i = (inicio + k) % n;
+      const i = (inicio + k) % n, op = OPCIONES[i];
+      // proxy marcado como caído: se salta, salvo que sea el último recurso
+      if (Date.now() < proxyCaidoHasta[op.ip] && proxyCaidoHasta.some((h, j) => j !== op.ip && Date.now() >= h)) continue;
       try {
-        const datos = await pedirJSON(urlFuente(OPCIONES[i].f, OPCIONES[i].base), OPCIONES[i].ms);
-        if (!datos || !Array.isArray(datos.ac)) throw new Error('respuesta sin aviones');
+        const datos = await pedirJSON(urlFuente(op.f, op.base), op.ms);
+        if (!datos || !Array.isArray(datos.ac)) throw new Error(datos && datos.error ? datos.error : 'respuesta sin aviones');
         // Si ha funcionado una alternativa tras probar la principal, no volver a la principal en 10 min
         if (i !== 0 && inicio === 0) conexion.reintentarPrincipalEn = Date.now() + 10 * 60 * 1000;
-        conexion.fuenteIdx = i; conexion.fuenteNombre = OPCIONES[i].nombre;
+        proxyCaidoHasta[op.ip] = 0;
+        conexion.fuenteIdx = i; conexion.fuenteNombre = op.nombre; conexion.errores = '';
         return datos;
-      } catch (e) { ultimoError = e; }
+      } catch (e) {
+        ultimoError = e;
+        errores.push((op.ip ? 'respaldo' : 'principal') + ': ' + textoError(e));
+        // sin respuesta de red (no un error HTTP): el proxy está bloqueado o caído
+        if (e.name === 'AbortError' || e instanceof TypeError) proxyCaidoHasta[op.ip] = Date.now() + 10 * 60 * 1000;
+      }
     }
-    throw ultimoError;
+    conexion.errores = errores.join(' · ');
+    throw ultimoError || new Error('sin fuentes');
   }
 
   // Posición estimada de un avión en el instante t, avanzando según velocidad y rumbo
@@ -827,7 +841,9 @@
         (conexion.ultimoOk ? `<br>hace ${min < 1 ? Math.round(sinDatos / 1000) + ' s' : min + ' min'}` : '');
     } else if (conexion.fallos > 0) {
       el.classList.add('error');
-      txt.textContent = !C.proxy && !esLocal ? 'Falta proxy' : 'Sin respuesta';
+      if (!C.proxy && !esLocal) txt.textContent = 'Falta proxy';
+      else txt.innerHTML = 'Sin respuesta<br><small style="font-size:0.6em;opacity:0.85">' +
+        (conexion.errores || '').replace(/[<>&]/g, '') + '</small>';
       el.title = !C.proxy && !esLocal ? 'Falta configurar el proxy en config.js (ver README)' : 'Las APIs de aviones no responden; se reintenta solo';
     } else {
       txt.textContent = 'Conectando…';
@@ -890,6 +906,7 @@
     if (window.caches) caches.keys().then((k) => {
       const v = k.filter((x) => x.indexOf('radar-app-') === 0).map((x) => x.slice(10)).join(', ');
       $('aInfo').textContent += ' · versión: ' + (v || 'sin instalar');
+      if (conexion.errores) $('aInfo').textContent += ' · último fallo: ' + conexion.errores;
     }).catch(() => {});
   }
   $('btnAjustes').addEventListener('click', abrirAjustes);

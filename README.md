@@ -246,7 +246,7 @@ aparecerán los dos números arriba (el primero es la latitud).
 
 La tablet recoge los cambios sola en la siguiente recarga diaria. Para verlos al momento,
 cierra la app y ábrela dos veces. Si alguna vez no se actualiza, edita también `sw.js` y
-cambia el número de `const VERSION = 'v14';` (por ejemplo a `'v15'`).
+cambia el número de `const VERSION = 'v15';` (por ejemplo a `'v16'`).
 
 ---
 

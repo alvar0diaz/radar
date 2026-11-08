@@ -168,6 +168,17 @@ html, body {
 #tarjeta .ruta b { font-size: 1.25em; color: #ffffff; letter-spacing: 0.04em; }
 #tarjeta .ruta small { text-transform: none; letter-spacing: 0.02em; font-size: 0.7em; min-height: 1.2em; }
 
+/* Aviso de certificado no aceptado */
+#avisoCert {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 9;
+  width: 80vw; max-width: 26em; font-size: var(--u); text-align: center;
+  background: #1a0d0d; border: 2px solid var(--rojo); border-radius: 14px; padding: 0.9em 1.1em;
+}
+#avisoCert[hidden] { display: none; }
+#avisoCert > b { display: block; color: var(--rojo); font-size: 1.15em; margin-bottom: 0.4em; }
+#avisoCert span { display: block; font-size: 0.85em; line-height: 1.4; }
+#avisoCert button { margin-top: 0.8em; font: inherit; font-size: 0.85em; padding: 0.4em 1.4em; border-radius: 10px; background: #2a1414; color: var(--texto); border: 1px solid var(--rojo); }
+
 /* ---------- Modo noche ---------- */
 #noche { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 8; background: #000; opacity: 0; pointer-events: none; transition: opacity 3s; }
 

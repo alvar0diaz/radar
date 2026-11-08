@@ -796,7 +796,9 @@
     const el = $('estado'), txt = $('estadoTxt');
     const sinDatos = Date.now() - conexion.ultimoOk;
     el.className = '';
-    if (conexion.ultimoOk && sinDatos < 20000) {
+    if (certInvalido && !conexion.ultimoOk) {
+      el.classList.add('error'); txt.textContent = 'Certificado no válido';
+    } else if (conexion.ultimoOk && sinDatos < 20000) {
       el.classList.add('vivo'); txt.textContent = 'En vivo';
       el.title = 'Fuente: ' + conexion.fuenteNombre;
     } else if (!navigator.onLine || conexion.ultimoOk) {
@@ -921,6 +923,7 @@
   // --- Diagnóstico: comprueba una a una las conexiones que usa la app ---
   // Sirve para saber, en la propia tablet, qué falla cuando aparece "Sin respuesta".
   let swEstado = 'sin comprobar';
+  let certInvalido = false;   // el navegador rechazó el certificado de la web
   async function probar(url, opciones) {
     const t0 = Date.now();
     const ctrl = new AbortController();
@@ -973,6 +976,7 @@
     ul.innerHTML = filas.join('');
   }
   $('bDiag').addEventListener('click', diagnosticar);
+  $('bAvisoCert').addEventListener('click', () => { $('avisoCert').hidden = true; });
 
   // Cambio de tamaño u orientación: reencuadrar (con un pequeño retraso para agrupar eventos)
   let tReencuadre = 0;
@@ -1003,7 +1007,17 @@
     navigator.serviceWorker.register('sw.js').then((reg) => {
       swEstado = 'activo';
       setInterval(() => { if (navigator.onLine) reg.update().catch(() => {}); }, 30 * 60 * 1000);
-    }).catch((e) => { swEstado = 'error: ' + (e.message || e.name); console.warn('SW no registrado', e); });
+    }).catch((e) => {
+      swEstado = 'error: ' + (e.message || e.name);
+      console.warn('SW no registrado', e);
+      // Chrome rechaza el service worker cuando se entró pasando el aviso "La conexión no es
+      // privada": en ese caso tampoco llegarán los datos, así que se avisa en pantalla.
+      if (/SSL|certific/i.test(swEstado)) {
+        certInvalido = true;
+        $('avisoCert').hidden = false;
+        pintarEstado();
+      }
+    });
   } else {
     swEstado = 'no disponible (' + (location.protocol === 'https:' ? 'navegador sin soporte' : 'página sin https') + ')';
   }

@@ -642,8 +642,8 @@
     $('cModo').textContent = a ? (manual ? 'seleccionado' : 'auto') : '';
     if (!a) {
       $('cIndicativo').textContent = 'Sin aviones'; // ninguno en vuelo dentro del radio
-      ['cDesc', 'cTipo', 'cMatricula', 'cAltitud', 'cVert', 'cVel', 'cRumbo', 'cDist', 'cCiudades'].forEach((id) => { $(id).textContent = ['cDesc', 'cDist', 'cCiudades'].indexOf(id) >= 0 ? '' : '–'; });
-      $('cRuta').textContent = '– → –';
+      ['cDesc', 'cTipo', 'cMatricula', 'cAltitud', 'cVert', 'cVel', 'cRumbo', 'cDist', 'cCiudades'].forEach((id) => { if ($(id)) $(id).textContent = ['cDesc', 'cDist', 'cCiudades'].indexOf(id) >= 0 ? '' : '–'; });
+      if ($('cRuta')) $('cRuta').textContent = '– → –';
       return;
     }
     $('cIndicativo').textContent = a.indicativo;
@@ -651,7 +651,8 @@
     const comercial = esVueloComercial(a.indicativo);
     const ru = comercial ? rutaVigente(a.indicativo) : null;
     if (comercial && !ru && !rutaEnCurso && Date.now() - ultimaRuta > 1000) pedirRuta(a.indicativo);
-    if (ru && ru.estado === 'ok') {
+    if (!$('cRuta')) { /* página antigua en caché: se ignora la ruta hasta recargar */ }
+    else if (ru && ru.estado === 'ok') {
       $('cRuta').textContent = `${ru.origen.cod} → ${ru.destino.cod}`;
       $('cCiudades').textContent = `${ru.origen.ciudad} → ${ru.destino.ciudad}`;
     } else {
@@ -864,6 +865,11 @@
     $('aInfo').textContent = `Centro: ${C.centro.nombre} (${C.centro.lat}, ${C.centro.lon}) · radio ${C.radioNM} NM · ` +
       `fuente: ${conexion.fuenteNombre || '—'} · proxy: ${C.proxy || (esLocal ? 'local de pruebas' : 'sin configurar')}`;
     $('ajustes').hidden = false;
+    // Versión instalada (nombre de la caché del service worker), para comprobar actualizaciones
+    if (window.caches) caches.keys().then((k) => {
+      const v = k.filter((x) => x.indexOf('radar-app-') === 0).map((x) => x.slice(10)).join(', ');
+      $('aInfo').textContent += ' · versión: ' + (v || 'sin instalar');
+    }).catch(() => {});
   }
   $('btnAjustes').addEventListener('click', abrirAjustes);
   $('bCerrar').addEventListener('click', () => { $('ajustes').hidden = true; });
@@ -928,8 +934,19 @@
   mapa.on('move zoom', actualizarGeometria);
 
   // Service worker: guarda la app para que arranque al instante (solo en https o localhost)
+  // Actualización automática: cada 30 min se comprueba si hay versión nueva; cuando la nueva
+  // toma el control, la página se recarga sola una vez (no hace falta tocar la tablet).
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || esLocal)) {
-    navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW no registrado', e));
+    const habiaVersion = !!navigator.serviceWorker.controller;
+    let recargando = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!habiaVersion || recargando) return;   // primera instalación: no hace falta recargar
+      recargando = true;
+      location.reload();
+    });
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      setInterval(() => { if (navigator.onLine) reg.update().catch(() => {}); }, 30 * 60 * 1000);
+    }).catch((e) => console.warn('SW no registrado', e));
   }
 
   // --- Arranque ---

@@ -1,15 +1,17 @@
 /* =====================================================================
  * SERVICE WORKER
- * - "App shell" (HTML, JS, CSS, Leaflet, iconos): se sirve desde la caché
- *   para arrancar al instante y se actualiza en segundo plano.
+ * - "App shell" (HTML, JS, CSS, Leaflet, fuentes, iconos): se pide primero a
+ *   internet (sin usar la caché del navegador, para no recibir versiones viejas)
+ *   y se guarda; si no hay conexión o tarda más de 4 s, se usa la copia guardada.
+ *   Así la tablet siempre muestra la última versión y arranca aunque no haya red.
  * - Teselas del mapa base (CARTO o Esri): se guardan (el mapa no cambia) para que
  *   el fondo aparezca aunque no haya internet.
  * - Datos de aviones y meteorología: SIEMPRE en vivo, nunca se cachean.
  *
- * Si cambias algún archivo de la app, sube el número de VERSION para
- * forzar que la tablet descargue la versión nueva.
+ * Si cambias algún archivo de la app, sube el número de VERSION: la tablet lo
+ * detecta (lo comprueba cada 30 min), descarga todo de nuevo y se recarga sola.
  * ===================================================================== */
-const VERSION = 'v11';
+const VERSION = 'v12';
 const CACHE_APP = 'radar-app-' + VERSION;
 const CACHE_MAPA = 'radar-mapa-v1';
 const MAX_TESELAS = 400;
@@ -23,7 +25,13 @@ const APP_SHELL = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE_APP).then((c) => c.addAll(APP_SHELL)).then(() => self.skipWaiting()));
+  // cache: 'reload' = descargar de internet sí o sí, sin la caché HTTP del navegador
+  // (GitHub Pages la deja 10 min; sin esto se podían mezclar archivos de dos versiones)
+  e.waitUntil(
+    caches.open(CACHE_APP)
+      .then((c) => c.addAll(APP_SHELL.map((u) => new Request(u, { cache: 'reload' }))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', (e) => {
@@ -40,14 +48,21 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  // 1) Archivos de la propia app: caché primero y actualización en segundo plano
+  // 1) Archivos de la propia app: primero internet (versión al día), si falla la copia guardada
   if (url.origin === self.location.origin) {
     e.respondWith(
       caches.open(CACHE_APP).then(async (cache) => {
-        const enCache = await cache.match(req, { ignoreSearch: true });
-        const red = fetch(req).then((r) => { if (r.ok) cache.put(req, r.clone()); return r; }).catch(() => null);
-        if (enCache) { e.waitUntil(red); return enCache; }
-        return (await red) || (req.mode === 'navigate' ? cache.match('./index.html') : Response.error());
+        const deRed = new Promise((ok) => {
+          const t = setTimeout(() => ok(null), 4000);           // sin respuesta en 4 s → copia guardada
+          fetch(url.href, { cache: 'no-cache' })                 // 'no-cache' = pregunta al servidor si hay versión nueva
+            .then((r) => { clearTimeout(t); if (r.ok) cache.put(req, r.clone()); ok(r.ok ? r : null); })
+            .catch(() => { clearTimeout(t); ok(null); });
+        });
+        const r = await deRed;
+        if (r) return r;
+        const guardada = await cache.match(req, { ignoreSearch: true });
+        if (guardada) return guardada;
+        return req.mode === 'navigate' ? (await cache.match('./index.html')) || Response.error() : Response.error();
       })
     );
     return;

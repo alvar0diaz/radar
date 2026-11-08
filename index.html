@@ -15,13 +15,39 @@
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="style.css">
   <script>
-    // Si algo falla al arrancar, lo enseña en pantalla en vez de dejarla vacía
-    window.onerror = function (m, f, l) {
-      var d = document.createElement('div');
-      d.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#a00;color:#fff;font:16px sans-serif;padding:10px';
-      d.textContent = 'Error: ' + m + ' (' + String(f).split('/').pop() + ':' + l + ')';
-      (document.body || document.documentElement).appendChild(d);
-    };
+    // Registro de arranque: va escribiendo en pantalla cada paso. Si la app se queda
+    // a medias o falla, se ve dónde. Si todo va bien, desaparece a los pocos segundos.
+    (function () {
+      var caja, t0 = Date.now(), fallo = false;
+      function linea(txt, color) {
+        if (!document.body) { setTimeout(function () { linea(txt, color); }, 50); return; }
+        if (!caja) {
+          caja = document.createElement('div'); caja.id = 'arranque';
+          caja.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:99999;max-width:90%;background:rgba(0,0,0,0.85);color:#9f9;font:15px monospace;padding:8px 10px;border:1px solid #3a6;pointer-events:none';
+          document.body.appendChild(caja);
+        }
+        var d = document.createElement('div');
+        d.textContent = ((Date.now() - t0) / 1000).toFixed(1) + 's  ' + txt;
+        if (color) d.style.color = color;
+        caja.appendChild(d);
+      }
+      window.arranque = function (txt) { linea(txt); };
+      window.arranqueFin = function () {
+        linea('Listo');
+        setTimeout(function () { if (!fallo && caja) caja.parentNode.removeChild(caja); }, 4000);
+      };
+      window.onerror = function (m, f, l) {
+        fallo = true;
+        linea('ERROR: ' + m + ' (' + String(f).split('/').pop() + ':' + l + ')', '#f66');
+      };
+      linea('Página recibida');
+      document.addEventListener('DOMContentLoaded', function () {
+        linea('Estilos: ' + (getComputedStyle(document.body).backgroundColor || '?'));
+        linea('Leaflet: ' + (window.L ? 'OK' : 'NO cargado'), window.L ? null : '#f66');
+        linea('Config: ' + (window.CONFIG ? 'OK' : 'NO cargada'), window.CONFIG ? null : '#f66');
+      });
+      setTimeout(function () { if (!window.arranqueHecho) { fallo = true; linea('La app no ha terminado de arrancar en 20 s', '#fc6'); } }, 20000);
+    })();
   </script>
 </head>
 <body>

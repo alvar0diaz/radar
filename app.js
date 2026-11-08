@@ -16,6 +16,8 @@
   'use strict';
   const C = window.CONFIG;
   const $ = (id) => document.getElementById(id);
+  const paso = (t) => { if (window.arranque) window.arranque(t); };
+  paso('app.js en marcha');
 
   /* ===================== 1. UTILIDADES ===================== */
   const RAD = Math.PI / 180;
@@ -85,6 +87,7 @@
     try { localStorage.setItem('radar.ajustes', JSON.stringify(ajustes)); } catch (e) { /* sin almacenamiento */ }
   }
 
+  paso('Creando mapa');
   /* ===================== 3. MAPA Y ENCUADRE ===================== */
   const mapa = L.map('mapa', {
     zoomControl: false, attributionControl: true,
@@ -162,6 +165,7 @@
     dibujarFondo();
   }
 
+  paso('Mapa creado');
   /* ===================== 4. FONDO DEL RADAR ===================== */
   const lienzoFondo = $('fondo'), ctxFondo = lienzoFondo.getContext('2d');
   // Tipografía de aviación: B612, diseñada por Airbus para las pantallas de cabina
@@ -681,6 +685,7 @@
     $('cDist').title = 'Distancia desde ' + C.centro.nombre;
   }
 
+  paso('Aviones y tarjeta preparados');
   /* ===================== 7. METEOROLOGÍA ===================== */
   // --- Radar de lluvia de RainViewer ---
   // Límites comprobados en noviembre de 2026: zoom máximo 7 (por encima devuelve "Zoom Level
@@ -855,6 +860,7 @@
   window.addEventListener('online', () => { conexion.fallos = 0; cicloAviones(); cargarTiempo(); cargarLluvia(); });
   window.addEventListener('offline', pintarEstado);
 
+  paso('Meteorología y kiosco preparados');
   /* ===================== 9. AJUSTES Y ARRANQUE ===================== */
   function abrirAjustes() {
     $('aLluvia').checked = ajustes.lluvia;
@@ -1043,4 +1049,7 @@
       .then(alCambiarTamano).catch(() => {});
   }
   requestAnimationFrame(bucleDibujo);
+  window.arranqueHecho = true;
+  paso('Arranque completo, esperando primer fotograma…');
+  requestAnimationFrame(() => { paso('Primer fotograma dibujado'); if (window.arranqueFin) window.arranqueFin(); });
 })();

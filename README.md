@@ -211,6 +211,11 @@ con más opciones. **No funciona en Android 5-7** sin instalar antes los certifi
   **SIN CONEXIÓN** en ámbar, con el tiempo desde el último dato) y el botón ⚙ de ajustes.
 - **Abajo a la izquierda:** el tiempo en Fuenlabrada (se actualiza cada 10 minutos) y la hora
   del fotograma del radar de lluvia.
+- **Origen y destino:** la ficha muestra la aerolínea y la ruta en grande (códigos de aeropuerto,
+  p. ej. `MAD → UIO`) con las ciudades debajo; el avión de la ficha la lleva también en su
+  etiqueta del radar. Sale de adsbdb.com a partir del indicativo del vuelo, así que es muy fiable en
+  vuelos regulares pero puede fallar en chárter o desvíos. Los vuelos privados (con matrícula
+  como indicativo) no tienen ruta. La primera vez tarda unos segundos en aparecer.
 - **Abajo a la derecha:** ficha de un avión. Cambia sola cada 8 segundos; si **tocas un avión**,
   se queda fija en ese durante 30 segundos. Tocar en una zona vacía vuelve al modo automático.
 - **Colores:** verde = civil; ámbar = militar; gris = en tierra; **rojo parpadeante** = emergencia
@@ -241,7 +246,7 @@ aparecerán los dos números arriba (el primero es la latitud).
 
 La tablet recoge los cambios sola en la siguiente recarga diaria. Para verlos al momento,
 cierra la app y ábrela dos veces. Si alguna vez no se actualiza, edita también `sw.js` y
-cambia el número de `const VERSION = 'v10';` (por ejemplo a `'v11'`).
+cambia el número de `const VERSION = 'v11';` (por ejemplo a `'v12'`).
 
 ---
 
@@ -282,6 +287,7 @@ local de pruebas, sin tocar `config.js`.
 | **airplanes.live** (principal) | Responde **403**: ahora pide escribirles para dar acceso a la API. La app lo intenta y, si falla, pasa sola a adsb.lol y no lo reintenta hasta 10 minutos después. | 1 consulta/s según su documentación. |
 | **adsb.lol** (alternativa) | Funciona. Sin cabecera CORS → necesita el proxy. | Devuelve **429** si se le pide demasiado seguido; la app nunca hace más de una consulta a la vez y espera 30 s si recibe un 429. |
 | **RainViewer** | Funciona, con CORS. | Zoom máximo **7** (la app amplía esas teselas), 13 fotogramas (últimas 2 h, cada 10 min), sin predicción, **sin satélite infrarrojo**, un solo esquema de color. 500 peticiones/min por IP. |
+| **adsbdb.com** (rutas) | Funciona, con CORS (sin proxy), sin clave. Responde 404 si no conoce el indicativo. | No publica límites: la app hace como mucho 1 consulta cada 2 s, solo de vuelos comerciales, y guarda cada ruta 12 h en la tablet. |
 | **Open-Meteo** | Funciona, con CORS, sin clave. | 600 peticiones/min; la app hace una cada 10 min. |
 | **CARTO dark_all** | **Ahora exige clave** (sin ella, marca "API KEY REQUIRED"). | Gratis para uso no comercial con clave. Sin clave se usa Esri Dark Gray. |
 
@@ -289,6 +295,8 @@ local de pruebas, sin tocar `config.js`.
   no hay que cambiar nada en la app, el Worker ya lo intenta primero.
 - La app es web estática (sin servidor propio): se puede empaquetar más adelante como APK
   con Capacitor sin cambios.
+- Tipografía: **B612** y **B612 Mono**, diseñadas por Airbus para las pantallas de cabina
+  (licencia SIL OFL, en `vendor/fonts/`).
 - Rendimiento: unos 220 elementos en la página; el barrido gira solo con `transform` de CSS
   (lo mueve la GPU); los aviones se dibujan en un `canvas` limitado a 30 fotogramas por segundo
   (`fpsMax` en `config.js`).

@@ -10,6 +10,8 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preload" href="vendor/fonts/b612mono-700.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="vendor/fonts/b612-700.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -62,6 +64,7 @@
         <span id="cModo" class="modo"></span>
       </div>
       <div id="cDesc" class="desc"></div>
+      <div class="ruta"><b id="cRuta">– → –</b><small id="cCiudades"></small></div>
       <div class="rejilla">
         <div><small>Tipo</small><b id="cTipo">–</b></div>
         <div><small>Matrícula</small><b id="cMatricula">–</b></div>

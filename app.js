@@ -96,6 +96,7 @@
     inertia: false,
   });
   mapa.attributionControl.setPrefix(false);
+  mapa.attributionControl.addAttribution('Rutas: <a href="https://www.adsbdb.com/">adsbdb</a>');
 
   // Mapa base oscuro: CARTO si hay clave en config.js; si no, Esri "Dark Gray" (sin clave).
   // (CARTO pone la marca "API KEY REQUIRED" en sus teselas si no se pasa la clave.)
@@ -163,6 +164,10 @@
 
   /* ===================== 4. FONDO DEL RADAR ===================== */
   const lienzoFondo = $('fondo'), ctxFondo = lienzoFondo.getContext('2d');
+  // Tipografía de aviación: B612, diseñada por Airbus para las pantallas de cabina
+  // (incluida en vendor/fonts para que funcione sin internet)
+  const SANS = '"B612", system-ui, sans-serif';
+  const MONO = '"B612 Mono", "B612", monospace';
   const lienzoAviones = $('aviones'), ctxAviones = lienzoAviones.getContext('2d');
 
   function dimensionarLienzo(lz, ctx) {
@@ -185,7 +190,7 @@
     // Anillos de distancia con etiqueta
     const pnm = pxPorNM();
     ctx.lineWidth = 1.2;
-    ctx.font = `600 ${Math.round(U * 0.72)}px system-ui, sans-serif`;
+    ctx.font = `700 ${Math.round(U * 0.72)}px ${MONO}`;
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     const paso = pasoAnillos(C.radioNM);
     const anillos = [];
@@ -221,7 +226,7 @@
     ctx.stroke();
 
     // Rosa de los vientos (N, E, S, O) dentro del anillo exterior
-    ctx.font = `700 ${Math.round(U * 1.15)}px system-ui, sans-serif`;
+    ctx.font = `700 ${Math.round(U * 1.15)}px ${SANS}`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const rl = R - U * 1.45;
     [['N', 0], ['E', 90], ['S', 180], ['O', 270]].forEach(([t, g]) => {
@@ -231,7 +236,7 @@
     });
 
     // Aeropuertos de referencia (cuadrado + código ICAO)
-    ctx.font = `600 ${Math.round(U * 0.72)}px system-ui, sans-serif`;
+    ctx.font = `700 ${Math.round(U * 0.72)}px ${MONO}`;
     ctx.textAlign = 'left';
     for (const ap of C.aeropuertos) {
       const [x, y] = aPantalla(ap.lat, ap.lon);
@@ -452,8 +457,8 @@
     }
     ctx.globalAlpha = datosViejos ? 0.45 : 1;
 
-    const fuenteEtiq = `700 ${Math.round(U * 0.95)}px system-ui, sans-serif`;
-    const fuenteAlt = `500 ${Math.round(U * 0.72)}px system-ui, sans-serif`;
+    const fuenteEtiq = `700 ${Math.round(U * 0.95)}px ${MONO}`;
+    const fuenteAlt = `400 ${Math.round(U * 0.72)}px ${MONO}`;
     // Aviones en tierra primero para que los que vuelan queden por encima
     const lista = [...aviones.values()].sort((a, b) => (a.tierra === b.tierra ? 0 : a.tierra ? -1 : 1));
     for (const a of lista) {
@@ -495,6 +500,16 @@
         ctx.font = fuenteAlt;
         ctx.strokeText(ta, lx, ly + U * 0.85);
         ctx.fillStyle = col; ctx.fillText(ta, lx, ly + U * 0.85);
+      }
+      // avión de la tarjeta: tercera línea con la ruta (p. ej. LIS→AUH)
+      if (seleccion.hex === a.hex) {
+        const ru = rutaVigente(a.indicativo);
+        if (ru && ru.estado === 'ok') {
+          const tr = ru.origen.cod + '→' + ru.destino.cod;
+          ctx.font = fuenteAlt;
+          ctx.strokeText(tr, lx, ly + U * 1.65);
+          ctx.fillStyle = '#7fd6ff'; ctx.fillText(tr, lx, ly + U * 1.65);
+        }
       }
     }
     ctx.globalAlpha = 1;
@@ -541,6 +556,77 @@
     });
   }
 
+  /* ---------- Rutas: origen y destino (adsbdb.com) ----------
+   * Los datos ADS-B no dicen de dónde viene ni a dónde va un avión. adsbdb.com lo deduce del
+   * indicativo (p. ej. IBE0136) según los horarios publicados de cada vuelo: es fiable en vuelos
+   * regulares, pero puede fallar en vuelos chárter, desvíos o indicativos reutilizados.
+   * Permite CORS (no necesita proxy). No publica límites, así que vamos con calma: como mucho
+   * una consulta cada 2 s, solo vuelos comerciales, y cada respuesta se guarda 12 h. */
+  const RUTA_VIGENCIA_MS = 12 * 3600 * 1000, RUTA_REINTENTO_MS = 2 * 60 * 1000;
+  const rutas = new Map();   // indicativo -> { estado: 'ok' | 'nd' | 'error', t, origen, destino, aerolinea }
+  try {
+    const g = JSON.parse(localStorage.getItem('radar.rutas') || '{}');
+    Object.keys(g).forEach((k) => { if (Date.now() - g[k].t < RUTA_VIGENCIA_MS) rutas.set(k, g[k]); });
+  } catch (e) { /* sin almacenamiento */ }
+  let tGuardarRutas = 0;
+  function guardarRutas() {
+    clearTimeout(tGuardarRutas);
+    tGuardarRutas = setTimeout(() => {
+      try {
+        const o = {};
+        [...rutas.entries()].filter((e) => e[1].estado !== 'error').slice(-400).forEach((e) => { o[e[0]] = e[1]; });
+        localStorage.setItem('radar.rutas', JSON.stringify(o));
+      } catch (e) { /* sin almacenamiento */ }
+    }, 5000);
+  }
+  // Solo los indicativos de aerolínea (3 letras + número) tienen ruta; las matrículas no
+  const esVueloComercial = (cs) => /^[A-Z]{3}[0-9][0-9A-Z]{0,4}$/.test(cs);
+  function rutaVigente(cs) {
+    const r = rutas.get(cs);
+    if (!r) return null;
+    const edad = Date.now() - r.t;
+    if (edad > (r.estado === 'error' ? RUTA_REINTENTO_MS : RUTA_VIGENCIA_MS)) return null;
+    return r;
+  }
+  const necesitaRuta = (a) => esVueloComercial(a.indicativo) && !rutaVigente(a.indicativo);
+  const aeropuerto = (x) => ({ cod: x.iata_code || x.icao_code || '?', ciudad: x.municipality || x.name || '' });
+  let rutaEnCurso = false, ultimaRuta = 0;
+  async function pedirRuta(cs) {
+    rutaEnCurso = true; ultimaRuta = Date.now();
+    try {
+      const r = await fetch('https://api.adsbdb.com/v0/callsign/' + encodeURIComponent(cs), { cache: 'no-store' });
+      if (r.status === 404) rutas.set(cs, { estado: 'nd', t: Date.now() });        // indicativo desconocido
+      else if (!r.ok) throw new Error('HTTP ' + r.status);
+      else {
+        const d = await r.json();
+        const fr = d && d.response && d.response.flightroute;
+        rutas.set(cs, fr && fr.origin && fr.destination
+          ? { estado: 'ok', t: Date.now(), origen: aeropuerto(fr.origin), destino: aeropuerto(fr.destination), aerolinea: fr.airline ? fr.airline.name : '' }
+          : { estado: 'nd', t: Date.now() });
+      }
+      guardarRutas();
+    } catch (e) {
+      rutas.set(cs, { estado: 'error', t: Date.now() });    // se reintenta en 2 min
+    } finally {
+      rutaEnCurso = false;
+    }
+    const sel = aviones.get(seleccion.hex);
+    if (sel && sel.indicativo === cs) actualizarTarjeta(false);
+  }
+  // Cada 2 s: primero la ruta del avión de la tarjeta; si ya la tiene, la del más cercano sin ruta
+  function cicloRutas() {
+    if (rutaEnCurso || document.visibilityState !== 'visible' || !navigator.onLine) return;
+    if (Date.now() - ultimaRuta < 1800) return;
+    const sel = aviones.get(seleccion.hex);
+    let objetivo = sel && necesitaRuta(sel) ? sel : null;
+    if (!objetivo) {
+      aviones.forEach((a) => {
+        if (!a.tierra && a.dist <= C.radioNM && necesitaRuta(a) && (!objetivo || a.dist < objetivo.dist)) objetivo = a;
+      });
+    }
+    if (objetivo) pedirRuta(objetivo.indicativo);
+  }
+
   function actualizarTarjeta(forzar) {
     const ahora = Date.now();
     const manual = ahora < seleccion.manualHasta;
@@ -556,11 +642,26 @@
     $('cModo').textContent = a ? (manual ? 'seleccionado' : 'auto') : '';
     if (!a) {
       $('cIndicativo').textContent = 'Sin aviones'; // ninguno en vuelo dentro del radio
-      ['cDesc', 'cTipo', 'cMatricula', 'cAltitud', 'cVert', 'cVel', 'cRumbo', 'cDist'].forEach((id) => { $(id).textContent = id === 'cDesc' || id === 'cDist' ? '' : '–'; });
+      ['cDesc', 'cTipo', 'cMatricula', 'cAltitud', 'cVert', 'cVel', 'cRumbo', 'cDist', 'cCiudades'].forEach((id) => { $(id).textContent = ['cDesc', 'cDist', 'cCiudades'].indexOf(id) >= 0 ? '' : '–'; });
+      $('cRuta').textContent = '– → –';
       return;
     }
     $('cIndicativo').textContent = a.indicativo;
-    $('cDesc').textContent = a.emergencia ? `⚠ EMERGENCIA · squawk ${a.squawk}` : (a.militar ? 'Militar · ' : '') + (a.desc || '');
+    // Origen y destino
+    const comercial = esVueloComercial(a.indicativo);
+    const ru = comercial ? rutaVigente(a.indicativo) : null;
+    if (comercial && !ru && !rutaEnCurso && Date.now() - ultimaRuta > 1000) pedirRuta(a.indicativo);
+    if (ru && ru.estado === 'ok') {
+      $('cRuta').textContent = `${ru.origen.cod} → ${ru.destino.cod}`;
+      $('cCiudades').textContent = `${ru.origen.ciudad} → ${ru.destino.ciudad}`;
+    } else {
+      // Sin ruta: se mantiene el formato "··· → ···" y el motivo va en la línea pequeña
+      $('cRuta').textContent = '··· → ···';
+      $('cCiudades').textContent = comercial && (!ru || ru.estado === 'error') ? 'Buscando ruta…'
+        : comercial ? 'Ruta no disponible' : 'Vuelo privado o sin ruta';
+    }
+    $('cDesc').textContent = a.emergencia ? `⚠ EMERGENCIA · squawk ${a.squawk}`
+      : [a.militar ? 'Militar' : '', ru && ru.aerolinea, a.desc].filter(Boolean).join(' · ');
     $('cTipo').textContent = a.tipo || '–';
     $('cMatricula').textContent = a.matricula || '–';
     $('cAltitud').textContent = a.tierra ? 'En tierra' : a.alt == null ? '–'
@@ -572,7 +673,8 @@
     if ($('cVel').scrollWidth > $('cVel').clientWidth + 2 && a.gs != null) $('cVel').textContent = `${Math.round(a.gs)} kt`;
     $('cRumbo').textContent = a.track == null ? '–' : `${Math.round(a.track)}° ${cardinal(a.track)}`;
     encajar($('tarjeta'));
-    $('cDist').textContent = `A ${a.dist.toFixed(1).replace('.', ',')} NM (${miles(a.dist * 1.852)} km) de ${C.centro.nombre}`;
+    $('cDist').textContent = `A ${a.dist.toFixed(1).replace('.', ',')} NM · ${miles(a.dist * 1.852)} km`;
+    $('cDist').title = 'Distancia desde ' + C.centro.nombre;
   }
 
   /* ===================== 7. METEOROLOGÍA ===================== */
@@ -818,6 +920,7 @@
       mapa.invalidateSize({ animate: false });
       if (!ajustes.zoomManual) encuadrar();
       actualizarGeometria();
+      encajar($('tiempo')); encajar($('tarjeta'));   // los paneles cambian de ancho al girar
     }, 150);
   }
   window.addEventListener('resize', alCambiarTamano);
@@ -840,5 +943,11 @@
   comprobarNoche(); setInterval(comprobarNoche, 60 * 1000);
   pedirWakeLock();
   programarRecarga(C.recargaCadaHoras * 3600 * 1000);
+  setInterval(cicloRutas, 2000);
+  // Cuando terminen de cargar las fuentes B612, se reencuadra y se redibuja el fondo con ellas
+  if (document.fonts && document.fonts.load) {
+    Promise.all(['700 20px "B612"', '400 20px "B612 Mono"', '700 20px "B612 Mono"'].map((f) => document.fonts.load(f)))
+      .then(alCambiarTamano).catch(() => {});
+  }
   requestAnimationFrame(bucleDibujo);
 })();

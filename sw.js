@@ -9,7 +9,7 @@
  * Si cambias algún archivo de la app, sube el número de VERSION para
  * forzar que la tablet descargue la versión nueva.
  * ===================================================================== */
-const VERSION = 'v10';
+const VERSION = 'v11';
 const CACHE_APP = 'radar-app-' + VERSION;
 const CACHE_MAPA = 'radar-mapa-v1';
 const MAX_TESELAS = 400;
@@ -17,6 +17,8 @@ const MAX_TESELAS = 400;
 const APP_SHELL = [
   './', './index.html', './style.css', './app.js', './config.js', './manifest.webmanifest',
   './vendor/leaflet/leaflet.js', './vendor/leaflet/leaflet.css',
+  './vendor/fonts/b612-400.woff2', './vendor/fonts/b612-700.woff2',
+  './vendor/fonts/b612mono-400.woff2', './vendor/fonts/b612mono-700.woff2',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png',
 ];
 

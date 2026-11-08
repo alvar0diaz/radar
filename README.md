@@ -159,11 +159,37 @@ Android 5 es la 143, y ya incluye lo necesario para mantener la pantalla encendi
 5. Haz los ajustes del **paso 7**, cambiando "Chrome" por **Firefox** en el punto 4
    (batería sin restricciones).
 
-> **Si prefieres Chrome** en una tablet antigua: hay que instalar en Android los certificados
-> raíz de Let's Encrypt (*ISRG Root X1* y *X2*, de <https://letsencrypt.org/certificates/>) en
-> Ajustes → Seguridad → *Instalar desde almacenamiento*. Android obliga a tener un PIN o patrón
-> de bloqueo para ello y muestra siempre un aviso de "red supervisada". Por eso es más sencillo
-> Firefox. Esto también afecta a Fully Kiosk Browser, que usa los certificados del sistema.
+### Si Firefox no funciona: instalar el certificado en Android y usar Chrome
+
+Solo hay que instalar **un** certificado: *ISRG Root X1* (la raíz de Let's Encrypt). Todas las
+webs que usa el radar dependen de él. Hay una copia en esta web (carpeta `certificado/`),
+idéntica a la oficial de <https://letsencrypt.org/certificates/>.
+
+1. **Pon un bloqueo de pantalla** (Android lo exige para instalar certificados):
+   Ajustes → **Seguridad** → **Bloqueo de pantalla** → **PIN** (o Patrón) → elige uno y apúntalo.
+2. En la tablet, abre **Chrome** y escribe exactamente:
+   `https://alvar0diaz.github.io/radar/certificado/isrgrootx1.crt`
+3. Saldrá **"La conexión no es privada"** (es lo normal, todavía no tiene el certificado):
+   toca **Configuración avanzada** → **Acceder a alvar0diaz.github.io (sitio no seguro)**.
+4. Android pregunta por el certificado:
+   - Si aparece la ventana **"Asignar un nombre al certificado"**: escribe `Lets Encrypt`, deja
+     *Uso de credenciales* en **VPN y aplicaciones** y toca **Aceptar**. Si pide el PIN, ponlo.
+   - Si en vez de eso se **descarga** un archivo: ve a Ajustes → **Seguridad** →
+     **Instalar desde almacenamiento** (o *Instalar desde la tarjeta SD*) → abre **Descargas** →
+     toca `isrgrootx1.crt` → nombre `Lets Encrypt` → **Aceptar**.
+5. Comprueba que está: Ajustes → Seguridad → **Credenciales de confianza** → pestaña
+   **Usuario** → debe aparecer *Internet Security Research Group / ISRG Root X1*.
+6. **Cierra Chrome del todo** (botón de apps recientes → desliza Chrome fuera) y vuelve a abrirlo.
+7. Abre `https://alvar0diaz.github.io/radar/`. Ya **no** debe salir "La conexión no es privada"
+   y en la esquina debe poner **EN VIVO**. Si sale el aviso, vuelve al punto 5.
+8. Instálala en la pantalla de inicio como en el **paso 6** y haz los ajustes del **paso 7**.
+
+Notas:
+- Android mostrará siempre una notificación de **"Es posible que la red esté supervisada"**.
+  Es solo un aviso por haber añadido un certificado; no significa nada malo y se puede ignorar.
+- No quites el PIN de bloqueo: si lo quitas, Android borra el certificado. Si te molesta tener
+  que ponerlo, en el paso 7 se explica cómo dejar la pantalla siempre encendida.
+- Lo mismo vale para Fully Kiosk Browser, que usa los certificados del sistema.
 
 ## Paso 6 · Instalar la app en la tablet (Chrome, Android 8 o posterior)
 

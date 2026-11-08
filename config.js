@@ -7,8 +7,10 @@
 window.CONFIG = {
   // --- Ubicación y alcance -------------------------------------------
   centro: { lat: 40.2842, lon: -3.7942, nombre: 'Fuenlabrada' },
-  radioNM: 40,              // radio del radar en millas náuticas (1 NM = 1,852 km)
-  anilloCadaNM: 10,         // separación entre anillos de distancia
+  radioNM: 20,              // radio inicial en millas náuticas (1 NM = 1,852 km). Se puede
+                            // cambiar en la tablet: ⚙ → Radio (de 5 a 50 NM); se recuerda.
+  radioMinNM: 5, radioMaxNM: 50, radioPasoNM: 5,  // límites y salto del selector de radio
+  anilloCadaNM: 0,          // separación entre anillos; 0 = automática según el radio
 
   // --- Mapa base -----------------------------------------------------
   // CARTO (dark_all) exige desde 2026 una clave gratuita; sin ella sus teselas salen

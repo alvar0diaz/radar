@@ -1,7 +1,7 @@
 # Radar de vuelos para tablet
 
 Aplicación web que convierte una tablet en un radar de aviones a pantalla completa,
-centrado en Fuenlabrada, con lluvia, viento y temperatura. Se instala en la tablet
+centrado en Fuenlabrada (radio ajustable de 5 a 50 NM), con lluvia, viento y temperatura. Se instala en la tablet
 como si fuera una app y funciona las 24 horas.
 
 ## Tu instalación (ya hecha)
@@ -216,6 +216,9 @@ con más opciones. **No funciona en Android 5-7** sin instalar antes los certifi
 - **Colores:** verde = civil; ámbar = militar; gris = en tierra; **rojo parpadeante** = emergencia
   (códigos 7500, 7600 o 7700).
 - **Cuadrados azules:** aeropuertos de Barajas (LEMD), Getafe (LEGT) y Cuatro Vientos (LECU).
+- **Radio del radar:** botón ⚙ → **Radio**, con los botones **−** / **+** o la barra, de
+  **5 a 50 NM** (de 5 en 5; 1 NM = 1,85 km). El mapa se reencuadra al momento, los anillos se
+  reparten solos y la tablet recuerda tu elección aunque se reinicie.
 - **Botón ⚙:** activar/desactivar la lluvia y su opacidad, las nubes, el modo noche, y
   "Tocar para ajustar zoom" (permite mover y ampliar el mapa con los dedos; al desactivarlo
   vuelve al encuadre normal).
@@ -229,7 +232,8 @@ Edita `config.js` en GitHub (lápiz → cambiar → **Commit changes**). Por eje
 
 ```js
 centro: { lat: 40.2842, lon: -3.7942, nombre: 'Fuenlabrada' },
-radioNM: 40,
+radioNM: 20,          // radio inicial; en la tablet se cambia desde ⚙ → Radio
+radioMinNM: 5, radioMaxNM: 50, radioPasoNM: 5,
 ```
 
 Para saber la latitud y longitud de un sitio: en Google Maps, mantén pulsado el punto y
@@ -237,7 +241,7 @@ aparecerán los dos números arriba (el primero es la latitud).
 
 La tablet recoge los cambios sola en la siguiente recarga diaria. Para verlos al momento,
 cierra la app y ábrela dos veces. Si alguna vez no se actualiza, edita también `sw.js` y
-cambia el número de `const VERSION = 'v9';` (por ejemplo a `'v10'`).
+cambia el número de `const VERSION = 'v10';` (por ejemplo a `'v11'`).
 
 ---
 

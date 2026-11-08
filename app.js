@@ -66,9 +66,21 @@
     nubes: !!C.openWeatherMapKey,
     noche: C.modoNoche.activo,
     zoomManual: false,
+    radioNM: C.radioNM,
   };
   try { Object.assign(ajustes, JSON.parse(localStorage.getItem('radar.ajustes') || '{}')); } catch (e) { /* sin almacenamiento */ }
   ajustes.zoomManual = false;  // al arrancar, siempre encuadre fijo
+  // Radio elegido en la tablet (5-50 NM). A partir de aquí todo el código usa C.radioNM.
+  function limitarRadio(r) {
+    r = Math.round(Number(r) || C.radioNM);
+    return Math.min(C.radioMaxNM || 50, Math.max(C.radioMinNM || 5, r));
+  }
+  C.radioNM = ajustes.radioNM = limitarRadio(ajustes.radioNM);
+  // Separación de anillos: la de config.js, o automática para que haya entre 3 y 5 anillos
+  function pasoAnillos(r) {
+    if (C.anilloCadaNM > 0 && r / C.anilloCadaNM <= 8) return C.anilloCadaNM;
+    return r <= 6 ? 1 : r <= 12 ? 2 : r <= 20 ? 5 : 10;
+  }
   function guardarAjustes() {
     try { localStorage.setItem('radar.ajustes', JSON.stringify(ajustes)); } catch (e) { /* sin almacenamiento */ }
   }
@@ -175,7 +187,11 @@
     ctx.lineWidth = 1.2;
     ctx.font = `600 ${Math.round(U * 0.72)}px system-ui, sans-serif`;
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    for (let nm = C.anilloCadaNM; nm <= C.radioNM + 0.01; nm += C.anilloCadaNM) {
+    const paso = pasoAnillos(C.radioNM);
+    const anillos = [];
+    for (let nm = paso; nm < C.radioNM - paso * 0.4; nm += paso) anillos.push(nm);
+    anillos.push(C.radioNM);   // el anillo exterior siempre es el radio elegido
+    for (const nm of anillos) {
       const r = nm * pnm;
       const exterior = Math.abs(nm - C.radioNM) < 0.01;
       ctx.strokeStyle = verde + (exterior ? '0.75)' : '0.32)');
@@ -246,8 +262,16 @@
   // se usa el proxy local de pruebas; si no, se intenta directo (por si un día permiten CORS).
   const esLocal = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
   const DIRECTO = { airplanes: 'https://api.airplanes.live', adsblol: 'https://api.adsb.lol' };
+  // Se piden aviones hasta 1,5 veces el radio (mín. 10 NM) para que las esquinas de la pantalla,
+  // fuera del círculo, también muestren tráfico. El contador solo cuenta los de dentro.
+  function radioConsulta() { return Math.min(250, Math.max(10, Math.ceil(C.radioNM * 1.5))); }
+  function contarAviones() {
+    let n = 0;
+    aviones.forEach((a) => { if (a.dist <= C.radioNM) n++; });
+    $('numAviones').textContent = n;
+  }
   function urlFuente(f) {
-    const ruta = f.ruta.replace('{lat}', C.centro.lat).replace('{lon}', C.centro.lon).replace('{r}', Math.round(C.radioNM));
+    const ruta = f.ruta.replace('{lat}', C.centro.lat).replace('{lon}', C.centro.lon).replace('{r}', radioConsulta());
     const base = (C.proxy || '').replace(/\/+$/, '') || (esLocal ? 'http://localhost:8781' : '');
     if (base) return base + ruta;
     const [, pref, resto] = ruta.match(/^\/([^/]+)(\/.*)$/);
@@ -348,7 +372,7 @@
     }
     // Quitamos los que llevan más de 15 s sin aparecer en la respuesta
     for (const [hex, a] of aviones) if (!vistos.has(hex) && t - a.visto > 15) aviones.delete(hex);
-    $('numAviones').textContent = [...aviones.values()].filter((a) => a.dist <= C.radioNM).length;
+    contarAviones();
   }
 
   // Ciclo de descarga: cada 5 s; si falla, espera cada vez más (máx. 30 s)
@@ -531,7 +555,7 @@
     tar.classList.toggle('emergencia', !!(a && a.emergencia));
     $('cModo').textContent = a ? (manual ? 'seleccionado' : 'auto') : '';
     if (!a) {
-      $('cIndicativo').textContent = aviones.size ? 'Toca un avión' : 'Sin aviones';
+      $('cIndicativo').textContent = 'Sin aviones'; // ninguno en vuelo dentro del radio
       ['cDesc', 'cTipo', 'cMatricula', 'cAltitud', 'cVert', 'cVel', 'cRumbo', 'cDist'].forEach((id) => { $(id).textContent = id === 'cDesc' || id === 'cDist' ? '' : '–'; });
       return;
     }
@@ -731,6 +755,9 @@
     $('aNubes').disabled = !capaNubes;
     $('notaNubes').textContent = capaNubes ? '' : '(requiere clave en config.js)';
     $('aNoche').checked = ajustes.noche;
+    $('aRadio').min = C.radioMinNM || 5; $('aRadio').max = C.radioMaxNM || 50; $('aRadio').step = C.radioPasoNM || 5;
+    $('aRadio').value = C.radioNM;
+    pintarRadio(C.radioNM);
     $('aZoom').checked = ajustes.zoomManual;
     $('aInfo').textContent = `Centro: ${C.centro.nombre} (${C.centro.lat}, ${C.centro.lon}) · radio ${C.radioNM} NM · ` +
       `fuente: ${conexion.fuenteNombre || '—'} · proxy: ${C.proxy || (esLocal ? 'local de pruebas' : 'sin configurar')}`;
@@ -742,6 +769,31 @@
   $('aLluvia').addEventListener('change', (e) => { ajustes.lluvia = e.target.checked; guardarAjustes(); aplicarCapasTiempo(); });
   $('aOpacidad').addEventListener('input', (e) => { ajustes.opacidad = parseFloat(e.target.value); guardarAjustes(); aplicarCapasTiempo(); });
   $('aNubes').addEventListener('change', (e) => { ajustes.nubes = e.target.checked; guardarAjustes(); aplicarCapasTiempo(); });
+  // --- Selector de radio ---
+  function pintarRadio(r) {
+    $('aRadioTxt').textContent = r + ' NM';
+    $('aRadioKm').textContent = '(' + Math.round(r * 1.852) + ' km)';
+  }
+  let tRadio = 0;
+  function cambiarRadio(r) {
+    r = limitarRadio(r);
+    $('aRadio').value = r;
+    pintarRadio(r);
+    if (r === C.radioNM) return;
+    C.radioNM = ajustes.radioNM = r;
+    guardarAjustes();
+    encuadrar();               // nuevo zoom para que el círculo siga llenando la pantalla
+    actualizarGeometria();     // anillos, barrido y lienzos
+    contarAviones();
+    seleccion.ultimoCambio = 0; actualizarTarjeta(true);
+    // Pedir enseguida los aviones del nuevo radio (agrupando cambios rápidos)
+    clearTimeout(tRadio);
+    tRadio = setTimeout(cicloAviones, 400);
+  }
+  $('aRadio').addEventListener('input', (e) => pintarRadio(e.target.value));
+  $('aRadio').addEventListener('change', (e) => cambiarRadio(e.target.value));
+  $('aRadioMenos').addEventListener('click', () => cambiarRadio(C.radioNM - (C.radioPasoNM || 5)));
+  $('aRadioMas').addEventListener('click', () => cambiarRadio(C.radioNM + (C.radioPasoNM || 5)));
   $('aNoche').addEventListener('change', (e) => { ajustes.noche = e.target.checked; guardarAjustes(); comprobarNoche(); });
   $('aZoom').addEventListener('change', (e) => {
     // Modo "tocar para ajustar zoom": permite arrastrar y pellizcar el mapa

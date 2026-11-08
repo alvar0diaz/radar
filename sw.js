@@ -9,7 +9,7 @@
  * Si cambias algún archivo de la app, sube el número de VERSION para
  * forzar que la tablet descargue la versión nueva.
  * ===================================================================== */
-const VERSION = 'v9';
+const VERSION = 'v10';
 const CACHE_APP = 'radar-app-' + VERSION;
 const CACHE_MAPA = 'radar-mapa-v1';
 const MAX_TESELAS = 400;

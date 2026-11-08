@@ -160,6 +160,12 @@ html, body {
 #ajustes small { color: var(--texto-suave); font-size: 0.7em; }
 #ajustes input[type=checkbox] { width: 1.6em; height: 1.6em; accent-color: var(--verde); }
 #ajustes input[type=range] { width: 45%; accent-color: var(--verde); }
+/* Selector de radio: botones grandes −/+ y barra deslizante */
+#ajustes .fila.radio { flex-wrap: wrap; }
+#ajustes .fila.radio b { color: var(--verde); }
+#ajustes .selector { display: flex; align-items: center; gap: 0.4em; flex: 1 1 14em; justify-content: flex-end; }
+#ajustes .selector input[type=range] { flex: 1; width: auto; }
+#ajustes .selector button { flex: none; width: 2.2em; height: 2.2em; padding: 0; font-size: 1.1em; line-height: 1; }
 #ajustes .botones { display: flex; flex-wrap: wrap; gap: 0.5em; margin-top: 0.8em; }
 #ajustes button {
   flex: 1 1 40%; font: inherit; font-size: 0.9em; padding: 0.55em; border-radius: 10px;

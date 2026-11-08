@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es" style="background:#003355;color:#fff">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prueba del radar</title>
+</head>
+<body style="font:20px sans-serif;padding:16px;background:#003355;color:#fff">
+<h1 style="font-size:28px">Prueba del radar</h1>
+<p>Si lees esto, el navegador abre la web.</p>
+<ul id="r" style="line-height:1.6"><li>JavaScript: <b id="js" style="color:#f66">NO funciona</b></li></ul>
+<p><a href="./" style="color:#9cf">Abrir el radar</a></p>
+<script>
+(function () {
+  var r = document.getElementById('r');
+  document.getElementById('js').textContent = 'funciona';
+  document.getElementById('js').style.color = '#6f6';
+  function linea(txt, ok) {
+    var li = document.createElement('li');
+    li.innerHTML = txt + ': <b style="color:' + (ok === true ? '#6f6' : ok === false ? '#f66' : '#fc6') + '">' + (ok === true ? 'OK' : ok === false ? 'FALLA' : ok) + '</b>';
+    r.appendChild(li); return li;
+  }
+  linea('Navegador', navigator.userAgent);
+  linea('Service worker', 'serviceWorker' in navigator);
+  linea('Canvas', !!document.createElement('canvas').getContext);
+  try { new Function('const a = {...{b:1}}; let c = a?.b ?? 2; return () => c')(); linea('JavaScript moderno', true); }
+  catch (e) { linea('JavaScript moderno', false); }
+  function probar(nombre, url) {
+    var li = linea(nombre, 'probando…');
+    fetch(url, { cache: 'no-store' }).then(function (x) {
+      li.lastChild.textContent = x.ok ? 'OK' : 'HTTP ' + x.status;
+      li.lastChild.style.color = x.ok ? '#6f6' : '#f66';
+    }).catch(function (e) { li.lastChild.textContent = 'FALLA (' + e.message + ')'; li.lastChild.style.color = '#f66'; });
+  }
+  probar('Archivos de la app', 'app.js');
+  probar('Aviones (proxy)', 'https://radar-proxy.alvarods92.workers.dev/adsblol/v2/point/40.28/-3.79/5');
+  probar('Tiempo (Open-Meteo)', 'https://api.open-meteo.com/v1/forecast?latitude=40.28&longitude=-3.79&current=temperature_2m');
+  probar('Lluvia (RainViewer)', 'https://api.rainviewer.com/public/weather-maps.json');
+  window.onerror = function (m) { linea('Error', m); };
+})();
+</script>
+</body>
+</html>

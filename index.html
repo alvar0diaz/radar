@@ -14,6 +14,15 @@
   <link rel="preload" href="vendor/fonts/b612-700.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="style.css">
+  <script>
+    // Si algo falla al arrancar, lo enseña en pantalla en vez de dejarla vacía
+    window.onerror = function (m, f, l) {
+      var d = document.createElement('div');
+      d.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#a00;color:#fff;font:16px sans-serif;padding:10px';
+      d.textContent = 'Error: ' + m + ' (' + String(f).split('/').pop() + ':' + l + ')';
+      (document.body || document.documentElement).appendChild(d);
+    };
+  </script>
 </head>
 <body>
   <!-- Capa 1: mapa base (Leaflet + CARTO) y capas de lluvia/nubes -->

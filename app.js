@@ -31,6 +31,12 @@
   const PUNTOS = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
   const cardinal = (g) => PUNTOS[Math.round(((g % 360) + 360) % 360 / 45) % 8];
   const miles = (n) => Math.round(n).toLocaleString('es-ES');
+  // Primer valor que no sea null/undefined (equivale a "a ?? b", que no existe en navegadores
+  // anteriores a 2020; así la app funciona también en tablets antiguas)
+  function primero() {
+    for (let i = 0; i < arguments.length; i++) if (arguments[i] != null) return arguments[i];
+    return null;
+  }
 
   // Proyección Mercator propia (más rápida que pedírsela a Leaflet para cada punto).
   // 'origen' es la esquina superior izquierda de la pantalla en píxeles de mundo.
@@ -310,9 +316,9 @@
         hex: d.hex,
         indicativo: (d.flight || '').trim() || (d.r || '').trim() || d.hex.toUpperCase(),
         tipo: d.t || '', matricula: d.r || '', desc: d.desc || '',
-        alt: tierra ? 0 : (typeof d.alt_baro === 'number' ? d.alt_baro : d.alt_geom ?? null),
-        tierra, gs: d.gs ?? null, track: d.track ?? d.true_heading ?? null,
-        vr: d.baro_rate ?? d.geom_rate ?? null, squawk: sq,
+        alt: tierra ? 0 : (typeof d.alt_baro === 'number' ? d.alt_baro : primero(d.alt_geom)),
+        tierra, gs: primero(d.gs), track: primero(d.track, d.true_heading),
+        vr: primero(d.baro_rate, d.geom_rate), squawk: sq,
         militar: ((d.dbFlags || 0) & 1) === 1,
         emergencia: sq === '7500' || sq === '7600' || sq === '7700' || (d.emergency && d.emergency !== 'none'),
         lat: d.lat, lon: d.lon,

@@ -16,6 +16,10 @@
      Un 7" de 1024×600 tiene ~170 píxeles por pulgada: 20 px ≈ 3 mm, legible a 1-2 m. */
   --u: clamp(16px, 3.4vmin, 32px);
 }
+/* Navegadores antiguos sin clamp()/min()/max(): valor fijo equivalente */
+@supports not (width: clamp(1px, 1px, 1px)) {
+  :root { --u: 3.4vmin; }
+}
 
 * { box-sizing: border-box; }
 html, body {
@@ -29,7 +33,7 @@ html, body {
 }
 
 /* Mapa, barrido y lienzos ocupan toda la pantalla, apilados */
-#mapa, #fondo, #aviones { position: fixed; inset: 0; width: 100%; height: 100%; }
+#mapa, #fondo, #aviones { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; }
 #mapa { background: #050b08; z-index: 1; }
 #fondo { z-index: 3; pointer-events: none; }
 #aviones { z-index: 4; pointer-events: none; }
@@ -65,12 +69,12 @@ html, body {
 @keyframes giro { to { transform: rotate(360deg); } }
 
 /* ---------- HUD ---------- */
-#hud { position: fixed; inset: 0; z-index: 5; pointer-events: none; font-size: var(--u); }
+#hud { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 5; pointer-events: none; font-size: var(--u); }
 #hud > * { position: absolute; pointer-events: auto; }
-.arriba { top: max(8px, env(safe-area-inset-top)); }
+.arriba { top: 8px; top: max(8px, env(safe-area-inset-top)); }
 .abajo  { bottom: 22px; }  /* deja sitio a la atribución del mapa */
-.izq    { left: max(10px, env(safe-area-inset-left)); }
-.der    { right: max(10px, env(safe-area-inset-right)); }
+.izq    { left: 10px; left: max(10px, env(safe-area-inset-left)); }
+.der    { right: 10px; right: max(10px, env(safe-area-inset-right)); }
 .centro { left: 50%; transform: translateX(-50%); }
 
 /* Texto con sombra fuerte: legible sobre el mapa sin necesidad de caja */
@@ -105,8 +109,7 @@ html, body {
 /* Paneles inferiores (tiempo y tarjeta de avión) */
 .panel {
   background: var(--fondo-panel); border: 1px solid var(--borde-panel); border-radius: 12px;
-  padding: 0.45em 0.65em; width: min(31vw, 14em);
-  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+  padding: 0.45em 0.65em; width: 31vw; width: min(31vw, 14em);
 }
 .panel .cab { display: flex; align-items: baseline; justify-content: space-between; gap: 0.4em; }
 .panel .grande { font-size: calc(var(--u) * 1.9); font-weight: 700; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -140,17 +143,17 @@ html, body {
 }
 
 /* ---------- Modo noche ---------- */
-#noche { position: fixed; inset: 0; z-index: 8; background: #000; opacity: 0; pointer-events: none; transition: opacity 3s; }
+#noche { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 8; background: #000; opacity: 0; pointer-events: none; transition: opacity 3s; }
 
 /* ---------- Panel de ajustes ---------- */
 #ajustes {
-  position: fixed; inset: 0; z-index: 10; background: rgba(0, 0, 0, 0.6);
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 10; background: rgba(0, 0, 0, 0.6);
   display: flex; align-items: center; justify-content: center; font-size: var(--u);
 }
 #ajustes[hidden] { display: none; }
 #ajustes .caja {
   background: #0b1712; border: 1px solid var(--borde-panel); border-radius: 14px;
-  padding: 0.8em 1.1em; width: min(92vw, 26em); max-height: 92vh; overflow-y: auto; touch-action: pan-y;
+  padding: 0.8em 1.1em; width: 92vw; width: min(92vw, 26em); max-height: 92vh; overflow-y: auto; touch-action: pan-y;
 }
 #ajustes h2 { margin: 0 0 0.4em; font-size: 1.3em; color: var(--verde); }
 #ajustes .fila { display: flex; align-items: center; justify-content: space-between; gap: 1em; padding: 0.45em 0; border-bottom: 1px solid rgba(255,255,255,0.06); }

@@ -11,8 +11,9 @@ Los pasos 1 a 4 ya están hechos con tus cuentas:
 - **App publicada:** <https://alvar0diaz.github.io/radar/> (repositorio: <https://github.com/alvar0diaz/radar>)
 - **Puente de datos (Cloudflare Worker):** `https://radar-proxy.alvarods92.workers.dev`, ya puesto en `config.js`.
 
-Solo te queda instalarla en la tablet: ve directamente al **paso 6**. El resto de la guía
-sirve por si algún día hay que repetirlo desde cero.
+Solo te queda instalarla en la tablet. **Tu tablet tiene Android 5.1: usa Firefox, no Chrome**
+(ve a [Tablets con Android 5, 6 o 7](#tablets-con-android-5-6-o-7-usa-firefox)). Para tablets
+modernas, el **paso 6**. El resto de la guía sirve por si algún día hay que repetirlo desde cero.
 
 ---
 
@@ -136,7 +137,35 @@ gratuitas y solo dan acceso a mapas, pero no pongas aquí contraseñas ni nada p
 
 ---
 
-## Paso 6 · Instalar la app en la tablet (Chrome)
+## Tablets con Android 5, 6 o 7: usa Firefox
+
+**Por qué:** casi todas las webs que usa la app (GitHub, Cloudflare, Open-Meteo, RainViewer)
+tienen certificados de seguridad de *Let's Encrypt*. Android anterior a 7.1 no los reconoce y
+Chrome usa los del sistema, así que en esas tablets Chrome mostraría **"La conexión no es privada"**
+y no cargaría nada. Además, Chrome dejó de actualizarse en Android 5 (última versión: 95).
+Firefox lleva sus propios certificados, así que no tiene ese problema. La última versión para
+Android 5 es la 143, y ya incluye lo necesario para mantener la pantalla encendida.
+
+1. En la tablet, abre **Google Play**, busca **Firefox** (de Mozilla) e instálalo.
+   Play instalará sola la última versión compatible con tu tablet.
+   - Si Play no funciona en la tablet, descarga el instalador oficial de Mozilla:
+     <https://archive.mozilla.org/pub/fenix/releases/143.0/android/> → carpeta
+     `fenix-143.0-android-arm64-v8a` (o `armeabi-v7a` si la tablet es de 32 bits) → archivo `.apk`.
+     Para instalarlo tendrás que permitir "Orígenes desconocidos" en Ajustes → Seguridad.
+2. Abre Firefox y escribe `https://alvar0diaz.github.io/radar/`. Espera a que salgan los aviones.
+3. Toca el menú **⋮** → **Añadir a pantalla de inicio** (o **Instalar**) → **Añadir**.
+4. Abre la app desde el nuevo icono **Radar** de la pantalla de inicio.
+   Si se ven barras arriba o abajo, toca ⚙ → **Pantalla completa**.
+5. Haz los ajustes del **paso 7**, cambiando "Chrome" por **Firefox** en el punto 4
+   (batería sin restricciones).
+
+> **Si prefieres Chrome** en una tablet antigua: hay que instalar en Android los certificados
+> raíz de Let's Encrypt (*ISRG Root X1* y *X2*, de <https://letsencrypt.org/certificates/>) en
+> Ajustes → Seguridad → *Instalar desde almacenamiento*. Android obliga a tener un PIN o patrón
+> de bloqueo para ello y muestra siempre un aviso de "red supervisada". Por eso es más sencillo
+> Firefox. Esto también afecta a Fully Kiosk Browser, que usa los certificados del sistema.
+
+## Paso 6 · Instalar la app en la tablet (Chrome, Android 8 o posterior)
 
 1. Conecta la tablet a la wifi y abre **Chrome**.
 2. Escribe la dirección de tu app (`https://TU-USUARIO.github.io/radar/`) y espera a que
@@ -169,7 +198,8 @@ Los nombres exactos cambian un poco según la marca de la tablet.
 
 Si quieres que nadie pueda salir de la app, instala **Fully Kiosk Browser** desde Google Play,
 pon tu dirección como *Start URL* y activa *Kiosk mode*. Hay una versión gratuita y una de pago
-con más opciones.
+con más opciones. **No funciona en Android 5-7** sin instalar antes los certificados (ver
+"Tablets con Android 5, 6 o 7").
 
 ---
 
@@ -207,7 +237,7 @@ aparecerán los dos números arriba (el primero es la latitud).
 
 La tablet recoge los cambios sola en la siguiente recarga diaria. Para verlos al momento,
 cierra la app y ábrela dos veces. Si alguna vez no se actualiza, edita también `sw.js` y
-cambia el número de `const VERSION = 'v8';` (por ejemplo a `'v9'`).
+cambia el número de `const VERSION = 'v9';` (por ejemplo a `'v10'`).
 
 ---
 
@@ -220,7 +250,8 @@ cambia el número de `const VERSION = 'v8';` (por ejemplo a `'v9'`).
 | "Sin datos · hace X min" | Ha fallado internet o la web de aviones. Se reconecta sola; si dura horas, revisa la wifi de la tablet. |
 | No aparece "Instalar aplicación" en Chrome | La dirección debe empezar por `https://`. Espera a que la página cargue del todo y vuelve a abrir el menú ⋮. |
 | El mapa muestra "API KEY REQUIRED" | Has puesto una clave de CARTO incorrecta. Revísala o déjala vacía (`cartoKey: ''`). |
-| La pantalla se apaga | Revisa el paso 7 (Pantalla activa y batería de Chrome sin restricciones). |
+| La pantalla se apaga | Revisa el paso 7 (Pantalla activa y batería del navegador sin restricciones). |
+| "La conexión no es privada" / `NET::ERR_CERT_AUTHORITY_INVALID` | Tablet con Android 7 o anterior: usa Firefox (ver "Tablets con Android 5, 6 o 7"). |
 
 ## Probar en el ordenador (opcional, para quien quiera)
 

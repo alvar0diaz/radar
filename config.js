@@ -27,6 +27,11 @@ window.CONFIG = {
   // Si lo dejas vacío y abres la app en tu ordenador (localhost), se usa el
   // proxy local de pruebas (proxy/proxy_local.py) en el puerto 8781.
   proxy: 'https://radar-proxy.alvarods92.workers.dev',
+  // Proxy de respaldo fuera de Cloudflare (Google Apps Script, ver README). Termina en
+  // "exec?p=". Se usa solo si el
+  // principal no responde, por ejemplo cuando los operadores bloquean Cloudflare
+  // durante los partidos de fútbol. Vacío = sin respaldo.
+  proxyRespaldo: 'https://script.google.com/macros/s/AKfycbwvavCkYnnLtBnF6EO4_XJ6KM2Sy8OtFQZaP3CZV0fAqmlWigC-cNVDENm7sw4GDE_8/exec?p=',
 
   // Fuentes ADS-B en orden de preferencia. Si la primera falla se usa la
   // siguiente automáticamente. {lat} {lon} {r} se sustituyen solos.

@@ -279,9 +279,19 @@
     aviones.forEach((a) => { if (a.dist <= C.radioNM) n++; });
     $('numAviones').textContent = n;
   }
-  function urlFuente(f) {
+  // Proxies en orden: el principal (Cloudflare) y el de respaldo (Google), por si los
+  // operadores bloquean Cloudflare durante el fútbol. Sin ninguno: proxy local o directo.
+  const PROXIES = [C.proxy, C.proxyRespaldo].map((p) => (p || '').replace(/\/+$/, '')).filter(Boolean);
+  if (!PROXIES.length) PROXIES.push(esLocal ? 'http://localhost:8781' : '');
+  // Todas las combinaciones proxy × fuente, en orden de preferencia
+  const OPCIONES = [];
+  PROXIES.forEach((p, ip) => C.fuentes.forEach((f) => OPCIONES.push({
+    f, base: p, nombre: f.nombre + (ip ? ' (respaldo)' : ''),
+    ms: ip ? 9000 : 4500,   // el respaldo de Google tarda más en contestar
+  })));
+  function urlFuente(f, base) {
     const ruta = f.ruta.replace('{lat}', C.centro.lat).replace('{lon}', C.centro.lon).replace('{r}', radioConsulta());
-    const base = (C.proxy || '').replace(/\/+$/, '') || (esLocal ? 'http://localhost:8781' : '');
+    if (base === undefined) base = PROXIES[0];
     if (base) return base + ruta;
     const [, pref, resto] = ruta.match(/^\/([^/]+)(\/.*)$/);
     return DIRECTO[pref] + resto;
@@ -301,17 +311,17 @@
   // Pide los aviones probando las fuentes en orden. Si la principal falla, se usa la
   // alternativa durante 10 minutos antes de volver a probar la principal.
   async function pedirAviones() {
-    const n = C.fuentes.length;
+    const n = OPCIONES.length;
     const inicio = Date.now() >= conexion.reintentarPrincipalEn ? 0 : conexion.fuenteIdx;
     let ultimoError;
     for (let k = 0; k < n; k++) {
       const i = (inicio + k) % n;
       try {
-        const datos = await pedirJSON(urlFuente(C.fuentes[i]), 4500);
+        const datos = await pedirJSON(urlFuente(OPCIONES[i].f, OPCIONES[i].base), OPCIONES[i].ms);
         if (!datos || !Array.isArray(datos.ac)) throw new Error('respuesta sin aviones');
         // Si ha funcionado una alternativa tras probar la principal, no volver a la principal en 10 min
         if (i !== 0 && inicio === 0) conexion.reintentarPrincipalEn = Date.now() + 10 * 60 * 1000;
-        conexion.fuenteIdx = i; conexion.fuenteNombre = C.fuentes[i].nombre;
+        conexion.fuenteIdx = i; conexion.fuenteNombre = OPCIONES[i].nombre;
         return datos;
       } catch (e) { ultimoError = e; }
     }
@@ -965,7 +975,7 @@
       fila('Fecha y hora de la tablet', Math.abs(desfase) < 10, Math.abs(desfase) < 10 ? 'correcta' : `desfasada ${desfase} min`);
     }
     const pruebas = [
-      ['Aviones (proxy Cloudflare)', urlFuente(C.fuentes[C.fuentes.length - 1]), {}],
+      ...PROXIES.map((p, i) => [i ? 'Aviones (proxy de respaldo)' : 'Aviones (proxy principal)', urlFuente(C.fuentes[C.fuentes.length - 1], p), {}]),
       ['Rutas (adsbdb)', 'https://api.adsbdb.com/v0/callsign/IBE0136', {}],
       ['Tiempo (Open-Meteo)', 'https://api.open-meteo.com/v1/forecast?latitude=40.28&longitude=-3.79&current=temperature_2m', {}],
       ['Lluvia (RainViewer)', 'https://api.rainviewer.com/public/weather-maps.json', {}],

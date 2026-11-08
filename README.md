@@ -119,6 +119,34 @@ El plan gratuito de Cloudflare permite 100.000 consultas al día; la tablet hace
 > Si ya la tenías abierta, recárgala **dos veces**: la primera descarga la versión nueva y
 > la segunda la muestra.
 
+## Paso 4 bis (recomendado) · Proxy de respaldo en Google, por los bloqueos del fútbol
+
+Los fines de semana con partidos, los operadores españoles (Movistar, Vodafone, Orange, Digi,
+MásMóvil…) bloquean por orden de LaLiga direcciones de Cloudflare que comparten miles de webs.
+Si cae la del proxy, la app se queda en **"Sin respuesta"** aunque internet funcione.
+Puedes ver si hay bloqueo ahora en <https://hayahora.futbol/>.
+
+Solución: un segundo proxy en **Google Apps Script** (gratis, con tu cuenta de Google). La app
+usa el de Cloudflare y, si no contesta, pasa sola al de Google; cada 10 minutos vuelve a probar
+el principal.
+
+1. Entra en <https://script.google.com/create> con tu cuenta de Google.
+2. Borra lo que haya en el editor y pega el contenido de `proxy/google-apps-script.gs`.
+   Ponle un nombre arriba (por ejemplo *Radar proxy respaldo*) y guarda (icono del disquete).
+3. **Implementar** → **Nueva implementación** → rueda dentada → **Aplicación web**.
+   - Ejecutar como: **Yo**. Quién tiene acceso: **Cualquier usuario**.
+4. **Implementar** → **Autorizar acceso** → tu cuenta → *"Google no ha verificado esta
+   aplicación"* → **Configuración avanzada** → **Ir a … (no seguro)** → **Permitir**.
+   (El aviso sale porque el script es tuyo y nadie lo ha revisado; solo pide conectarse a internet.)
+5. Copia la **URL de la aplicación web** (termina en `/exec`) y pégala en `config.js`,
+   añadiendo `?p=` al final:
+   ```
+   proxyRespaldo: 'https://script.google.com/macros/s/…/exec?p=',
+   ```
+6. Sube `config.js` a GitHub (y el número de `VERSION` de `sw.js`).
+
+Google permite unas 20.000 consultas al día gratis; como solo se usa durante los bloqueos, sobra.
+
 ## Paso 5 (opcional) · Claves gratuitas para mejorar el mapa
 
 Se ponen en `config.js` igual que el proxy (lápiz → editar → Commit changes).
@@ -272,7 +300,7 @@ aparecerán los dos números arriba (el primero es la latitud).
 
 La tablet recoge los cambios sola en la siguiente recarga diaria. Para verlos al momento,
 cierra la app y ábrela dos veces. Si alguna vez no se actualiza, edita también `sw.js` y
-cambia el número de `const VERSION = 'v19';` (por ejemplo a `'v20'`).
+cambia el número de `const VERSION = 'v20';` (por ejemplo a `'v21'`).
 
 ---
 

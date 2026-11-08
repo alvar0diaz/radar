@@ -425,7 +425,8 @@
     } catch (e) {
       conexion.fallos++;
       espera = Math.min(30000, C.refrescoAvionesSeg * 1000 * Math.pow(1.6, conexion.fallos));
-      if (/429/.test(e && e.message)) espera = 30000;   // "demasiadas peticiones": esperar más
+      // "demasiadas peticiones": esperar más (por el respaldo de Google basta menos, cambia de servidor)
+      if (/429/.test(e && e.message)) espera = /respaldo: HTTP 429/.test(conexion.errores || '') ? 8000 : 30000;
       console.warn('Aviones: fallo', e);
     }
     pintarEstado();

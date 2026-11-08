@@ -11,7 +11,7 @@
  * Si cambias algún archivo de la app, sube el número de VERSION: la tablet lo
  * detecta (lo comprueba cada 30 min), descarga todo de nuevo y se recarga sola.
  * ===================================================================== */
-const VERSION = 'v21';
+const VERSION = 'v22';
 const CACHE_APP = 'radar-app-' + VERSION;
 const CACHE_MAPA = 'radar-mapa-v1';
 const MAX_TESELAS = 400;

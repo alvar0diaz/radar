@@ -300,7 +300,7 @@ aparecerán los dos números arriba (el primero es la latitud).
 
 La tablet recoge los cambios sola en la siguiente recarga diaria. Para verlos al momento,
 cierra la app y ábrela dos veces. Si alguna vez no se actualiza, edita también `sw.js` y
-cambia el número de `const VERSION = 'v21';` (por ejemplo a `'v22'`).
+cambia el número de `const VERSION = 'v22';` (por ejemplo a `'v23'`).
 
 ---
 

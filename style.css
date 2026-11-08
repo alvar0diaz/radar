@@ -1,0 +1,166 @@
+/* =====================================================================
+ * ESTILOS DEL RADAR
+ * Tamaños en "vmin" (porcentaje del lado corto de la pantalla) para que
+ * todo escale igual en horizontal y en vertical y se lea a 1-2 m.
+ * ===================================================================== */
+:root {
+  --verde: #39ff88;
+  --verde-suave: rgba(57, 255, 136, 0.55);
+  --fondo-panel: rgba(4, 14, 10, 0.72);
+  --borde-panel: rgba(57, 255, 136, 0.28);
+  --texto: #e6fff0;
+  --texto-suave: #8fb8a2;
+  --ambar: #ffb020;
+  --rojo: #ff3b3b;
+  /* Unidad base de texto: 3,4 % del lado corto (≈20 px en una tablet de 600 px).
+     Un 7" de 1024×600 tiene ~170 píxeles por pulgada: 20 px ≈ 3 mm, legible a 1-2 m. */
+  --u: clamp(16px, 3.4vmin, 32px);
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  overflow: hidden; background: #050b08; color: var(--texto);
+  font-family: system-ui, -apple-system, "Roboto", "Segoe UI", sans-serif;
+  -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;           /* sin gestos del navegador (zoom, recarga al deslizar) */
+  overscroll-behavior: none;
+}
+
+/* Mapa, barrido y lienzos ocupan toda la pantalla, apilados */
+#mapa, #fondo, #aviones { position: fixed; inset: 0; width: 100%; height: 100%; }
+#mapa { background: #050b08; z-index: 1; }
+#fondo { z-index: 3; pointer-events: none; }
+#aviones { z-index: 4; pointer-events: none; }
+
+/* Atenuamos un poco el mapa base para que destaquen los aviones */
+.leaflet-tile-pane .capa-base { filter: brightness(0.85) saturate(0.6); }
+.leaflet-container { background: #050b08; font: inherit; }
+.leaflet-control-attribution {
+  background: rgba(0, 0, 0, 0.55) !important; color: #7d9a8b !important;
+  font-size: 10px; line-height: 1.4; padding: 1px 6px !important;
+}
+.leaflet-control-attribution a { color: #9fc7b2 !important; }
+
+/* Barrido del radar: un cono con degradado que gira. Solo usa transform → lo hace la GPU */
+#barrido {
+  position: fixed; z-index: 2; pointer-events: none;
+  left: 0; top: 0; width: 0; height: 0;  /* tamaño y posición los pone app.js */
+  border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    rgba(57, 255, 136, 0) 0deg,
+    rgba(57, 255, 136, 0) 290deg,
+    rgba(57, 255, 136, 0.10) 330deg,
+    rgba(57, 255, 136, 0.30) 360deg);
+  animation: giro 6s linear infinite;
+  will-change: transform;
+}
+/* Línea brillante en el borde de avance del barrido */
+#barrido::after {
+  content: ""; position: absolute; left: calc(50% - 1px); top: 0;
+  width: 2px; height: 50%;
+  background: linear-gradient(to top, rgba(57, 255, 136, 0.1), rgba(57, 255, 136, 0.8));
+}
+@keyframes giro { to { transform: rotate(360deg); } }
+
+/* ---------- HUD ---------- */
+#hud { position: fixed; inset: 0; z-index: 5; pointer-events: none; font-size: var(--u); }
+#hud > * { position: absolute; pointer-events: auto; }
+.arriba { top: max(8px, env(safe-area-inset-top)); }
+.abajo  { bottom: 22px; }  /* deja sitio a la atribución del mapa */
+.izq    { left: max(10px, env(safe-area-inset-left)); }
+.der    { right: max(10px, env(safe-area-inset-right)); }
+.centro { left: 50%; transform: translateX(-50%); }
+
+/* Texto con sombra fuerte: legible sobre el mapa sin necesidad de caja */
+#hud, #hud b, #hud span { text-shadow: 0 0 4px #000, 0 0 2px #000; }
+
+#contador { display: flex; flex-direction: column; line-height: 1; }
+#contador .num { font-size: calc(var(--u) * 2.6); font-weight: 700; color: var(--verde); font-variant-numeric: tabular-nums; }
+#contador .txt { font-size: calc(var(--u) * 0.85); color: var(--texto-suave); text-transform: uppercase; letter-spacing: 0.1em; }
+
+#reloj { text-align: center; line-height: 1; pointer-events: none; }
+#hora { font-size: calc(var(--u) * 2.5); font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+#fecha { font-size: calc(var(--u) * 0.85); color: var(--texto-suave); margin-top: 2px; text-transform: capitalize; }
+
+#esqDer { display: flex; align-items: flex-start; gap: 10px; }
+#estado {
+  display: flex; align-items: center; gap: 6px; padding-top: 6px;
+  font-size: calc(var(--u) * 0.75); color: var(--texto-suave); text-transform: uppercase; letter-spacing: 0.05em;
+  max-width: 24vw; text-align: right; line-height: 1.15;
+}
+#estado .punto { width: 0.7em; height: 0.7em; border-radius: 50%; background: #888; flex: none; }
+#estado.vivo .punto { background: var(--verde); box-shadow: 0 0 6px var(--verde); }
+#estado.aviso .punto { background: var(--ambar); }
+#estado.error .punto { background: var(--rojo); }
+#estado.error, #estado.aviso { color: var(--ambar); }
+
+#btnAjustes {
+  width: calc(var(--u) * 2.2); height: calc(var(--u) * 2.2); border-radius: 50%;
+  background: var(--fondo-panel); border: 1px solid var(--borde-panel); color: var(--texto-suave);
+  font-size: calc(var(--u) * 1.2); line-height: 1; padding: 0; cursor: pointer; opacity: 0.6;
+}
+
+/* Paneles inferiores (tiempo y tarjeta de avión) */
+.panel {
+  background: var(--fondo-panel); border: 1px solid var(--borde-panel); border-radius: 12px;
+  padding: 0.45em 0.65em; width: min(31vw, 14em);
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+}
+.panel .cab { display: flex; align-items: baseline; justify-content: space-between; gap: 0.4em; }
+.panel .grande { font-size: calc(var(--u) * 1.9); font-weight: 700; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.panel .rejilla { display: grid; grid-template-columns: 1fr 1fr; gap: 0.25em 0.6em; margin-top: 0.35em; }
+.panel small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.68em; color: var(--texto-suave); text-transform: uppercase; letter-spacing: 0.04em; line-height: 1.2; }
+.panel .rejilla > div { min-width: 0; }
+.panel b { overflow: hidden; display: block; font-size: 1.15em; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.panel .pie { margin-top: 0.35em; font-size: 0.8em; color: var(--texto-suave); }
+
+#tiempo .grande { color: var(--texto); }
+#tiempo .cielo { font-size: 0.85em; color: var(--texto-suave); text-align: right; }
+.flecha { display: inline-block; color: var(--verde); }
+
+#tarjeta .grande { color: var(--verde); }
+#tarjeta .desc { font-size: 0.72em; color: var(--texto-suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 1.2em; }
+#tarjeta { position: absolute; }
+/* "auto"/"seleccionado" pequeño en la esquina, para no recortar el indicativo */
+#tarjeta .modo { position: absolute; top: 0.35em; right: 0.6em; font-size: 0.5em; color: var(--texto-suave); text-transform: uppercase; letter-spacing: 0.05em; }
+#tarjeta.militar .grande { color: var(--ambar); }
+#tarjeta.emergencia { border-color: var(--rojo); }
+#tarjeta.emergencia .grande { color: var(--rojo); }
+#tarjeta.vacia .rejilla, #tarjeta.vacia .pie { opacity: 0.3; }
+
+/* En horizontal, los paneles ocupan el hueco lateral que deja el círculo */
+@media (orientation: landscape) {
+  .panel { width: clamp(200px, calc((100vw - 100vh) / 2 + 24px), 14em); }
+}
+/* En vertical (retrato) los paneles inferiores se reparten el ancho */
+@media (orientation: portrait) {
+  .panel { width: calc(50vw - 16px); }
+}
+
+/* ---------- Modo noche ---------- */
+#noche { position: fixed; inset: 0; z-index: 8; background: #000; opacity: 0; pointer-events: none; transition: opacity 3s; }
+
+/* ---------- Panel de ajustes ---------- */
+#ajustes {
+  position: fixed; inset: 0; z-index: 10; background: rgba(0, 0, 0, 0.6);
+  display: flex; align-items: center; justify-content: center; font-size: var(--u);
+}
+#ajustes[hidden] { display: none; }
+#ajustes .caja {
+  background: #0b1712; border: 1px solid var(--borde-panel); border-radius: 14px;
+  padding: 0.8em 1.1em; width: min(92vw, 26em); max-height: 92vh; overflow-y: auto; touch-action: pan-y;
+}
+#ajustes h2 { margin: 0 0 0.4em; font-size: 1.3em; color: var(--verde); }
+#ajustes .fila { display: flex; align-items: center; justify-content: space-between; gap: 1em; padding: 0.45em 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+#ajustes small { color: var(--texto-suave); font-size: 0.7em; }
+#ajustes input[type=checkbox] { width: 1.6em; height: 1.6em; accent-color: var(--verde); }
+#ajustes input[type=range] { width: 45%; accent-color: var(--verde); }
+#ajustes .botones { display: flex; flex-wrap: wrap; gap: 0.5em; margin-top: 0.8em; }
+#ajustes button {
+  flex: 1 1 40%; font: inherit; font-size: 0.9em; padding: 0.55em; border-radius: 10px;
+  background: #13241c; color: var(--texto); border: 1px solid var(--borde-panel);
+}
+#ajustes button.principal { background: #1d6b45; border-color: var(--verde); }
+#ajustes .info { font-size: 0.68em; color: var(--texto-suave); margin: 0.7em 0 0; line-height: 1.4; }

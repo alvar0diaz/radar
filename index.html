@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <!-- viewport-fit=cover: usa también la zona de la cámara/bordes en pantallas recortadas -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Radar de vuelos</title>
+  <meta name="theme-color" content="#050b08">
+  <meta name="description" content="Radar de aviones y meteorología a pantalla completa">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Capa 1: mapa base (Leaflet + CARTO) y capas de lluvia/nubes -->
+  <div id="mapa"></div>
+  <!-- Capa 2: barrido animado (solo transform CSS: lo mueve la GPU) -->
+  <div id="barrido"></div>
+  <!-- Capa 3: elementos fijos del radar (anillos, rosa, aeropuertos). Se redibuja solo al cambiar el tamaño -->
+  <canvas id="fondo"></canvas>
+  <!-- Capa 4: aviones, estelas y etiquetas (se redibuja ~30 veces por segundo) -->
+  <canvas id="aviones"></canvas>
+
+  <!-- Superposiciones de información (HUD) -->
+  <div id="hud">
+    <div id="contador" class="hud-esq arriba izq">
+      <span class="num" id="numAviones">–</span>
+      <span class="txt">aviones</span>
+    </div>
+
+    <div id="reloj" class="arriba centro">
+      <div id="hora">--:--</div>
+      <div id="fecha"></div>
+    </div>
+
+    <div class="arriba der hud-esq" id="esqDer">
+      <div id="estado"><span class="punto"></span><span id="estadoTxt">Conectando…</span></div>
+      <button id="btnAjustes" aria-label="Ajustes">⚙</button>
+    </div>
+
+    <section id="tiempo" class="panel abajo izq">
+      <div class="cab">
+        <span id="tTemp" class="grande">--°</span>
+        <span id="tCielo" class="cielo"></span>
+      </div>
+      <div class="rejilla">
+        <div><small>Sensación</small><b id="tSens">–</b></div>
+        <div><small>Nubes</small><b id="tNubes">–</b></div>
+        <div><small>Viento</small><b><span id="tFlecha" class="flecha">↑</span> <span id="tViento">–</span></b></div>
+        <div><small>Lluvia</small><b id="tLluvia">–</b></div>
+        <div><small>Presión</small><b id="tPresion">–</b></div>
+        <div><small>Ráfagas</small><b id="tRafagas">–</b></div>
+      </div>
+      <div id="tRadar" class="pie"></div>
+    </section>
+
+    <section id="tarjeta" class="panel abajo der">
+      <div class="cab">
+        <span id="cIndicativo" class="grande">–</span>
+        <span id="cModo" class="modo"></span>
+      </div>
+      <div id="cDesc" class="desc"></div>
+      <div class="rejilla">
+        <div><small>Tipo</small><b id="cTipo">–</b></div>
+        <div><small>Matrícula</small><b id="cMatricula">–</b></div>
+        <div><small>Altitud</small><b id="cAltitud">–</b></div>
+        <div><small>Vertical</small><b id="cVert">–</b></div>
+        <div><small>Velocidad</small><b id="cVel">–</b></div>
+        <div><small>Rumbo</small><b id="cRumbo">–</b></div>
+      </div>
+      <div id="cDist" class="pie"></div>
+    </section>
+  </div>
+
+  <!-- Velo de modo noche (atenúa toda la pantalla; no bloquea los toques) -->
+  <div id="noche"></div>
+
+  <!-- Panel de ajustes -->
+  <div id="ajustes" hidden>
+    <div class="caja">
+      <h2>Ajustes</h2>
+      <label class="fila"><span>Radar de lluvia</span><input type="checkbox" id="aLluvia"></label>
+      <label class="fila"><span>Opacidad del tiempo</span><input type="range" id="aOpacidad" min="0.1" max="1" step="0.05"></label>
+      <label class="fila" id="filaNubes"><span>Capa de nubes <small id="notaNubes"></small></span><input type="checkbox" id="aNubes"></label>
+      <label class="fila"><span>Modo noche automático</span><input type="checkbox" id="aNoche"></label>
+      <label class="fila"><span>Tocar para ajustar zoom</span><input type="checkbox" id="aZoom"></label>
+      <div class="botones">
+        <button id="bCentrar">Volver a centrar</button>
+        <button id="bPantalla">Pantalla completa</button>
+        <button id="bRecargar">Recargar</button>
+        <button id="bCerrar" class="principal">Cerrar</button>
+      </div>
+      <p class="info" id="aInfo"></p>
+    </div>
+  </div>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -18,16 +18,21 @@
     // Registro de arranque: va escribiendo en pantalla cada paso. Si la app se queda
     // a medias o falla, se ve dónde. Si todo va bien, desaparece a los pocos segundos.
     (function () {
-      var caja, t0 = Date.now(), fallo = false;
+      var caja, t0 = Date.now(), fallo = false, cola = [];
       function linea(txt, color) {
-        if (!document.body) { setTimeout(function () { linea(txt, color); }, 50); return; }
+        var t = ((Date.now() - t0) / 1000).toFixed(1) + 's  ';
+        if (!document.body) { cola.push([t + txt, color]); return; }   // aún no hay <body>: se guarda
         if (!caja) {
           caja = document.createElement('div'); caja.id = 'arranque';
           caja.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:99999;max-width:90%;background:rgba(0,0,0,0.85);color:#9f9;font:15px monospace;padding:8px 10px;border:1px solid #3a6;pointer-events:none';
           document.body.appendChild(caja);
+          cola.forEach(function (x) { anadir(x[0], x[1]); }); cola = [];
         }
+        anadir(t + txt, color);
+      }
+      function anadir(txt, color) {
         var d = document.createElement('div');
-        d.textContent = ((Date.now() - t0) / 1000).toFixed(1) + 's  ' + txt;
+        d.textContent = txt;
         if (color) d.style.color = color;
         caja.appendChild(d);
       }

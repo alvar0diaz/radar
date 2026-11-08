@@ -1051,5 +1051,9 @@
   requestAnimationFrame(bucleDibujo);
   window.arranqueHecho = true;
   paso('Arranque completo, esperando primer fotograma…');
-  requestAnimationFrame(() => { paso('Primer fotograma dibujado'); if (window.arranqueFin) window.arranqueFin(); });
+  // Se quita al dibujar el primer fotograma (o a los 3 s si el navegador no dibuja en segundo plano)
+  let finHecho = false;
+  const fin = (txt) => { if (finHecho) return; finHecho = true; paso(txt); if (window.arranqueFin) window.arranqueFin(); };
+  requestAnimationFrame(() => fin('Primer fotograma dibujado'));
+  setTimeout(() => fin('Sin fotogramas todavía (¿pantalla en segundo plano?)'), 3000);
 })();

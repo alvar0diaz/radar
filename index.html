@@ -24,7 +24,7 @@
         if (!document.body) { cola.push([t + txt, color]); return; }   // aún no hay <body>: se guarda
         if (!caja) {
           caja = document.createElement('div'); caja.id = 'arranque';
-          caja.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:99999;max-width:90%;background:rgba(0,0,0,0.85);color:#9f9;font:15px monospace;padding:8px 10px;border:1px solid #3a6;pointer-events:none';
+          caja.style.cssText = 'position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:99999;max-width:90%;background:rgba(0,0,0,0.85);color:#9f9;font:15px monospace;padding:8px 10px;border:1px solid #3a6;pointer-events:none';
           document.body.appendChild(caja);
           cola.forEach(function (x) { anadir(x[0], x[1]); }); cola = [];
         }
@@ -37,6 +37,7 @@
         caja.appendChild(d);
       }
       window.arranque = function (txt) { linea(txt); };
+      window.arranqueError = function (txt) { linea(txt, '#f66'); };   // se quita igual si luego llegan datos
       window.arranqueFin = function () {
         linea('Listo');
         setTimeout(function () { if (!fallo && caja) caja.parentNode.removeChild(caja); }, 4000);

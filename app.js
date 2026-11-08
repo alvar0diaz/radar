@@ -413,6 +413,7 @@
   // (al volver a primer plano, al recuperar internet...) simplemente se ignora.
   // Así se respeta el límite de las APIs (adsb.lol responde 429 si se le pide demasiado).
   let temporizadorAviones = 0, avionesEnCurso = false;
+  let primeraRespuesta = false;
   async function cicloAviones() {
     if (avionesEnCurso) return;
     avionesEnCurso = true;
@@ -422,12 +423,16 @@
       const datos = await pedirAviones();
       procesarAviones(datos);
       conexion.ultimoOk = Date.now(); conexion.fallos = 0;
+      // primera respuesta: se apunta en el aviso de arranque y este se cierra
+      if (!primeraRespuesta) { primeraRespuesta = true; paso('Aviones: OK (' + datos.ac.length + ') vía ' + conexion.fuenteNombre); if (window.arranqueFin) window.arranqueFin(); }
     } catch (e) {
       conexion.fallos++;
       espera = Math.min(30000, C.refrescoAvionesSeg * 1000 * Math.pow(1.6, conexion.fallos));
       // "demasiadas peticiones": esperar más (por el respaldo de Google basta menos, cambia de servidor)
       if (/429/.test(e && e.message)) espera = /respaldo: HTTP 429/.test(conexion.errores || '') ? 8000 : 30000;
       console.warn('Aviones: fallo', e);
+      // mientras no haya llegado nada, el motivo se queda a la vista en el aviso de arranque
+      if (!primeraRespuesta && window.arranqueError) window.arranqueError('Aviones: fallo — ' + (conexion.errores || (e && e.message)));
     }
     pintarEstado();
     avionesEnCurso = false;
@@ -1081,7 +1086,7 @@
   paso('Arranque completo, esperando primer fotograma…');
   // Se quita al dibujar el primer fotograma (o a los 3 s si el navegador no dibuja en segundo plano)
   let finHecho = false;
-  const fin = (txt) => { if (finHecho) return; finHecho = true; paso(txt); if (window.arranqueFin) window.arranqueFin(); };
+  const fin = (txt) => { if (finHecho) return; finHecho = true; paso(txt); };
   requestAnimationFrame(() => fin('Primer fotograma dibujado'));
   setTimeout(() => fin('Sin fotogramas todavía (¿pantalla en segundo plano?)'), 3000);
 })();

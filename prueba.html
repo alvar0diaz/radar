@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Prueba del radar</title>
 </head>
-<body style="font:20px sans-serif;padding:16px;background:#003355;color:#fff">
+<body style="font:24px sans-serif;padding:16px;background:#003355;color:#fff">
 <h1 style="font-size:28px">Prueba del radar</h1>
 <p>Si lees esto, el navegador abre la web.</p>
 <ul id="r" style="line-height:1.6"><li>JavaScript: <b id="js" style="color:#f66">NO funciona</b></li></ul>
@@ -32,8 +32,29 @@
       li.lastChild.style.color = x.ok ? '#6f6' : '#f66';
     }).catch(function (e) { li.lastChild.textContent = 'FALLA (' + e.message + ')'; li.lastChild.style.color = '#f66'; });
   }
+  linea('Hora de la tablet', new Date().toString().slice(0, 24));
+  if (window.caches) caches.keys().then(function (k) {
+    var v = k.filter(function (x) { return x.indexOf('radar-app-') === 0; }).join(', ');
+    linea('Versión guardada del radar', v ? v.replace('radar-app-', '') : 'ninguna');
+  });
   probar('Archivos de la app', 'app.js');
-  probar('Aviones (proxy)', 'https://radar-proxy.alvarods92.workers.dev/adsblol/v2/point/40.28/-3.79/5');
+  probarAviones('Aviones por Cloudflare (principal)', 'https://radar-proxy.alvarods92.workers.dev/adsblol/v2/point/40.28/-3.79/20');
+  probarAviones('Aviones por Google (respaldo)', 'https://script.google.com/macros/s/AKfycbwvavCkYnnLtBnF6EO4_XJ6KM2Sy8OtFQZaP3CZV0fAqmlWigC-cNVDENm7sw4GDE_8/exec?p=/adsblol/v2/point/40.28/-3.79/20');
+  function probarAviones(nombre, url) {
+    var li = linea(nombre, 'probando…'), t0 = Date.now();
+    var ctrl = window.AbortController ? new AbortController() : null;
+    var tmp = setTimeout(function () { if (ctrl) ctrl.abort(); }, 25000);
+    fetch(url, { cache: 'no-store', signal: ctrl ? ctrl.signal : undefined }).then(function (x) { return x.json(); }).then(function (d) {
+      clearTimeout(tmp);
+      var n = d && d.ac ? d.ac.length : -1, s = ((Date.now() - t0) / 1000).toFixed(1) + ' s';
+      li.lastChild.textContent = n >= 0 ? 'OK, ' + n + ' aviones (' + s + ')' : 'FALLA: ' + (d && d.error || 'sin datos') + ' (' + s + ')';
+      li.lastChild.style.color = n >= 0 ? '#6f6' : '#f66';
+    }).catch(function (e) {
+      clearTimeout(tmp);
+      li.lastChild.textContent = 'FALLA: ' + (e.name === 'AbortError' ? 'no contesta' : e.message);
+      li.lastChild.style.color = '#f66';
+    });
+  }
   probar('Tiempo (Open-Meteo)', 'https://api.open-meteo.com/v1/forecast?latitude=40.28&longitude=-3.79&current=temperature_2m');
   probar('Lluvia (RainViewer)', 'https://api.rainviewer.com/public/weather-maps.json');
   window.onerror = function (m) { linea('Error', m); };
